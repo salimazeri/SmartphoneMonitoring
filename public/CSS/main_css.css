@@ -1,0 +1,9 @@
+html { 
+  background: url(/IMAGES/main_background.png);
+}
+
+body {background: url(/IMAGES/main_background.png)}
+
+.center{
+	text-align: center;
+}

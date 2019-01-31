@@ -1,0 +1,21 @@
+.video {
+    background-color: #cde89b6e;
+    border-style: solid;
+    border-color: #0000000;
+    border-width: 3px;
+    margin-right: 5px;
+    margin-left: 5px;   
+    width: 24%;
+    height: 580px;
+}
+
+.center_video{
+    display: table;
+    margin: 0 auto;
+
+}
+
+.face {
+    position: absolute;
+    border: 2px solid #FFF;
+}
