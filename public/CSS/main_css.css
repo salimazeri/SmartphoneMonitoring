@@ -2,8 +2,40 @@ html {
   background: url(/IMAGES/main_background.png);
 }
 
-body {background: url(/IMAGES/main_background.png)}
+body {
+	background: url(/IMAGES/main_background.png)
+}
 
-.center{
+.center {
 	text-align: center;
+}
+
+.alert {
+	display: inline-block;
+}
+
+input {
+	width: 200px;
+	height: 50px;
+	text-align: center;
+}
+
+.outer_ {
+  display: table;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.middle_ {
+  display: table-cell;
+  vertical-align: middle;
+}
+
+.inner_ {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
 }

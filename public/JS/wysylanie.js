@@ -1,5 +1,10 @@
 var socket = io.connect();
+var ownSocket = null;
+var socketSwitch = true;
 var connection = {};
+var currRecieverSocket = null;
+var video = document.getElementById('localVideo');
+$('#stopBtn').prop('disabled',true);
 var options_without_restart = {offerToReceivseAudio: false,
                                offerToReceiveVideo: true,
                                iceRestart: false};
@@ -24,7 +29,20 @@ function getBrowserRTCConnectionObj () {
   }
 }
 
+function closeConnection(){
+  if (connection){
+    connection.close();
+    $('#initBtn').prop('disabled', false);
+    $('#stopBtn').prop('disabled', true);
+    video.srcObject = null;
+  }
+}
+
 function init(options = options_without_restart){
+    $('#initBtn').prop('disabled', true);
+    $('#stopBtn').prop('disabled', false);
+    
+
     navigator.getUserMedia = navigator.getUserMedia ||
                              navigator.webkitGetUserMedia ||
                              navigator.mozGetUserMedia;
@@ -33,13 +51,15 @@ function init(options = options_without_restart){
         audio: false,
         video: true
       }, function(stream) {
+        socket.emit('init', {"user": loggedUserID});
+        video.srcObject = stream;
         connection = getBrowserRTCConnectionObj();
         connection.addStream(stream);
         connection.onicecandidate = function (evt) {
           if (evt.candidate) {
             socket.emit('candidate_transmision', { "candidate": evt.candidate,
-                                                    "user": loggedUserID });
-            console.log(`wysylanie: ICE candidate:\n${evt.candidate ? evt.candidate.candidate : '(null)'}`);
+                                                    "user": loggedUserID,
+                                                    "socket": ownSocket });
           }
         };
 
@@ -55,8 +75,8 @@ function init(options = options_without_restart){
           function(offer){
               connection.setLocalDescription(offer);
               socket.emit('ask', {"offer":JSON.stringify(offer),
-                                  "user": loggedUserID});
-              console.log('wysylanie: wyslalem oferte do odbierania:', offer)
+                                  "user": loggedUserID,
+                                  "socket": ownSocket});
           },
           function(err){
             console.log(err);
@@ -69,13 +89,11 @@ function init(options = options_without_restart){
   };
 
 socket.on('candidate_reciever', function(candidate){
-  if (candidate.user === loggedUserID){
-    console.log('candidate_reciever');
+  if (candidate.user === loggedUserID && candidate.fromSocket === currRecieverSocket){
     connection.addIceCandidate( new RTCIceCandidate(candidate.candidate),
       function() {
-        console.log('AddIceCandidate success!');
-    }, function(err) {
-        console.error('Error AddIceCandidate');
+
+      }, function(err) {
         console.error(err);
       })
   }
@@ -84,8 +102,18 @@ socket.on('candidate_reciever', function(candidate){
 
 socket.on('response', function(bobDesc){
   if (bobDesc.user === loggedUserID){
+    currRecieverSocket = bobDesc.fromSocket;
     var bobDesc = bobDesc.bobDesc;
     connection.setRemoteDescription(new RTCSessionDescription(bobDesc));
+  }
+
+})
+
+socket.on('socket', function(msg){
+  if (socketSwitch === true){
+    ownSocket = msg;
+    console.log('Socket sesji: ',ownSocket);
+    socketSwitch = false;  
   }
   
 })

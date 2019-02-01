@@ -10,7 +10,9 @@ var peerConnections = {};
 var TempDescriptions = {};
 var TempIceCandidates = [];
 var connection = {};
-
+var ownSocket = null;
+var socketSwitch = true;
+var currTransmiterSocket = null;
 var socket = io.connect();
 
 var video1 = document.getElementById('remoteVideo1');
@@ -85,8 +87,9 @@ function getPeerConnection(){
 	pc.onicecandidate = function(evt){
 		if (evt.candidate) {
 			socket.emit('candidate_reciever', { "candidate": evt.candidate,
-												"user": loggedUserID });
-			console.log('Wyslalem ice candidates')
+												"user": loggedUserID,
+												"fromSocket": ownSocket,
+												"toSocket": currTransmiterSocket });
 		}
 	};
 	pc.onaddstream = function(evt){
@@ -95,37 +98,30 @@ function getPeerConnection(){
 			var connectionId = getKeyByValue(peerConnections,pc);
 			videosConn[connectionId] = video1;
 			isAttached["remoteVideo1"] = true;
-			//console.log(videosConn);
 		}
 		else if (video2.readyState === 0 && video1.readyState === 4){
 			attachMediaStream(video2, evt.stream);
 			var connectionId = getKeyByValue(peerConnections,pc);
 			videosConn[connectionId] = video2;
 			isAttached["remoteVideo2"] = true;
-			//console.log(videosConn);
 		}
 		else if (video3.readyState === 0 && video2.readyState === 4){
 			attachMediaStream(video3, evt.stream);
 			var connectionId = getKeyByValue(peerConnections,pc);
 			videosConn[connectionId] = video3;
 			isAttached["remoteVideo3"] = true;
-			//console.log(videosConn);
 		}
 		else if (video4.readyState === 0 && video3.readyState === 4){
 			attachMediaStream(video4, evt.stream);
 			var connectionId = getKeyByValue(peerConnections,pc);
 			videosConn[connectionId] = video4;
 			isAttached["remoteVideo4"] = true;
-			//console.log(videosConn);
 		};
 	};
 	pc.oniceconnectionstatechange = function(evt){
-		if (pc.iceConnectionState === "failed" ||
-	        pc.iceConnectionState === "disconnected" ||
-	        pc.iceConnectionState === "closed") { 
+		if (pc.iceConnectionState === "disconnected") { 
     			var connectionId = getKeyByValue(peerConnections,pc);
     			videosConn[connectionId].srcObject = null;
-    			//console.log(videosConn[connectionId].id)
     			isAttached[videosConn[connectionId].id] = false;
     			delete videosConn[connectionId];
     	}
@@ -136,10 +132,11 @@ function getPeerConnection(){
 function gotDescription(bobDesc) {
 	connection.setLocalDescription(bobDesc,
 	function() {
-			console.log('Odebralem oferte');
 			registerIceCandidate();
 			socket.emit('response', {"bobDesc": bobDesc,
-									 "user": loggedUserID});
+									 "user": loggedUserID,
+									 "fromSocket": ownSocket,
+									 "toSocket": currTransmiterSocket});
 	 }, displayError);
 }
 
@@ -147,7 +144,6 @@ function registerIceCandidate() {
 	for(var i = 0; i < TempIceCandidates.length; i++) {
 		connection.addIceCandidate(
 			new RTCIceCandidate(TempIceCandidates[i]), function() {
-			console.log('odbieranie: AddIceCandidate success!');
 		}, displayError);
 	}
 }
@@ -178,18 +174,34 @@ function getStream(){
 
 
 socket.on('candidate_transmision', function(candidate){
-	if (candidate.user === loggedUserID){
+	if (candidate.user === loggedUserID && candidate.socket === currTransmiterSocket){
 		TempIceCandidates.push(candidate.candidate);	
 	}
 	
 });
 
-socket.on('ask', function(aliceDesc){
-	if (aliceDesc.user === loggedUserID){
-		TempDescriptions = JSON.parse(aliceDesc.offer);	
+socket.on('ask', function(offer){
+	if (offer.user === loggedUserID){
+		TempDescriptions = JSON.parse(offer.offer);
+		currTransmiterSocket = offer.socket;
 	}
-	
 });
+
+socket.on('init', function(msg){
+	if (msg.user === loggedUserID){
+		setTimeout(function(){
+			getStream();
+		}, 5000);
+	}
+});
+
+socket.on('socket', function(msg){
+  if (socketSwitch === true){
+    ownSocket = msg;
+    console.log('Socket sesji:',ownSocket)
+    socketSwitch = false;  
+  }
+ });
 
 var stopInterval = false;
 
@@ -247,7 +259,6 @@ video4.addEventListener('loadedmetadata', function(){
 	}, false);
 
 function snapShot(video){
-	console.log(video);
 	if (isAttached[video.id] === false){
 		alert(video.id+' is not attached.');
 		return;
@@ -255,7 +266,6 @@ function snapShot(video){
 	ctx.fillRect(0,0,w,h);
 	ctx.drawImage(video,0,0,w,h);
 	var dataURI = canvas.toDataURL('image/jpeg');
-	console.log(dataURI);
 	var link = document.createElement('a');
 	link.download = video.id +'-'+date_time;
 	link.href = dataURI;

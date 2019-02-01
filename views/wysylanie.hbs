@@ -1,13 +1,30 @@
 {{> header}}
 
 
-    	
-        <script src="/socket.io/socket.io.js"></script>
-        <script src="/JS/wysylanie.js"></script>
+    	<br>
+        
+        
+
         <div class="center">
-        	<button id="btn1" onclick="init()" type="button" class="btn btn-primary btn-lg">Transmitting</button>
+        	<button id="initBtn" onclick="init()" type="button" class="btn btn-primary btn-lg">Start transmitting</button>
+            <br>
+            <br>
+            <button id="stopBtn" onclick="closeConnection()" type="button" class="btn btn-primary btn-lg">Stop transmitting</button>
+            <br>
+            <br>
+            <video class="video" id="localVideo" autoplay ></video>
         </div>
+        
+        <script src="/socket.io/socket.io.js"></script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/adapterjs/0.15.3/adapter.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/adapterjs/0.15.3/adapter.screenshare.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/adapterjs/0.15.3/adapter.screenshare.min.js"></script>
+
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+
+        <script src="/JS/wysylanie.js"></script>
+
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
     </body>

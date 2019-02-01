@@ -59,38 +59,35 @@ app.use(session({
 app.use('/', routes);
 
 // catch 404
-app.use(function(req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
-});
+
 
 //------------------------------------------------------------------------------------------------------------
 
 io.sockets.on('connection', function(socket){
 	connections.push(socket.id);
 	console.log('Połączenie: socket %s został podłączony', socket.id);
+	io.sockets.emit('socket', socket.id);
 
 	socket.on('disconnect', function(data){
 		connections.splice(connections.indexOf(socket), 1);
 		console.log('Połączenie: socket %s został odłączony', socket.id);
 	});
 	socket.on('ask', function(message) {
-		console.log('otrzymalem zapytanie: %s od %d',message.offer, message.user);
 		io.sockets.emit('ask', message);
 	});
 	socket.on('candidate_transmision', function(message) {
-		console.log('otrzymalem stream: %s od %d',message.candidate, message.user);
 		io.sockets.emit('candidate_transmision', message);
 	});
 	socket.on('candidate_reciever', function(message) {
-		console.log('otrzymalem transmisje: %s od %d',message.candidate, message.user);
-		io.sockets.emit('candidate_reciever', message);
+		io.sockets.to(message.toSocket).emit('candidate_reciever', message);
 	});
 	socket.on('response', function(message) {
-		console.log('otrzymalem odpowiedz: %s od %d',message.bobDesc, message.user);
-		io.sockets.emit('response', message);
-		
+		io.sockets.to(message.toSocket).emit('response', message);	
+	});
+
+	socket.on('init', function(message){
+		console.log('init');
+		io.sockets.emit('init', message);
 	});
 
 });
