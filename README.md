@@ -1,6 +1,6 @@
 # SmartphoneMonitoring
 
-##Web application that monitors using mobile phones.
+## Web application that monitors using mobile phones.
 
 Web application is implemented using NodeJS with ExpressJS.
 
