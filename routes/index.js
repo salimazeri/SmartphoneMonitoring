@@ -180,5 +180,52 @@ router.get('/odbieranie', function(req, res){
     }
 });
 
+router.get('/cam1', function(req, res){
+	console.log('rendering cam 1');
+	if (req.session.user && req.cookies.user_sid) {
+    	res.render('odbieranie', {user: req.session.user,
+							  	  cam: 'cam1'});
+    } else {
+    	res.redirect('/');
+    }
+	
+});
+
+router.get('/cam2', function(req, res){
+	if (req.session.user && req.cookies.user_sid) {
+    	res.render('odbieranie', {user: req.session.user,
+							  	  cam: 'cam2'});
+    } else {
+    	res.redirect('/');
+    }
+});
+
+router.get('/cam3', function(req, res){
+	if (req.session.user && req.cookies.user_sid) {
+    	res.render('odbieranie', {user: req.session.user,
+							  	  cam: 'cam3'});
+    } else {
+    	res.redirect('/');
+    }
+});
+
+router.get('/cam4', function(req, res){
+	if (req.session.user && req.cookies.user_sid) {
+    	res.render('odbieranie', {user: req.session.user,
+							  	  cam: 'cam4'});
+    } else {
+    	res.redirect('/');
+    }
+});
+
+router.get('/all_cams', function(req, res){
+	if (req.session.user && req.cookies.user_sid) {
+    	res.render('odbieranie', {user: req.session.user,
+							  	  cam: 'all_cams'});
+    } else {
+    	res.redirect('/');
+    }
+});
+
 module.exports = router;
 

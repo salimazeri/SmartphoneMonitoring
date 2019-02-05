@@ -51,7 +51,7 @@ var date_time = dd+'.'+
 				currentdate.getMinutes()+'-'+
 				ss;
 
-var id =0 ;
+var id =0;
 
 var loggedUserID = document.getElementById("user").innerHTML;
 
@@ -79,6 +79,42 @@ function getBrowserRTCConnectionObj () {
 	}
 }
 
+function show1(){
+	$("#video1div").css('display', "")
+	$("remoteVideo1").css('width', "auto;", 'height', "auto;");
+	$("#video2div").css('display', "None")
+	$("#video3div").css('display', "None")
+	$("#video4div").css('display', "None")
+}
+
+function show2(){
+	$("#video1div").css('display', "None")
+	$("#video2div").css('display', "")
+	$("#video3div").css('display', "None")
+	$("#video4div").css('display', "None")
+}
+
+function show3(){
+	$("#video1div").css('display', "None")
+	$("#video2div").css('display', "None")
+	$("#video3div").css('display', "")
+	$("#video4div").css('display', "None")
+}
+
+function show4(){
+	$("#video1div").css('display', "None")
+	$("#video2div").css('display', "None")
+	$("#video3div").css('display', "None")
+	$("#video4div").css('display', "")
+}
+
+function showAll(){
+	$("#video1div").css('display', "")
+	$("#video2div").css('display', "")
+	$("#video3div").css('display', "")
+	$("#video4div").css('display', "")
+}
+
 function getPeerConnection(){
 	var pc = getBrowserRTCConnectionObj();
 	id = ID();
@@ -91,32 +127,41 @@ function getPeerConnection(){
 												"fromSocket": ownSocket,
 												"toSocket": currTransmiterSocket });
 		}
-	};
+	}, displayError;
 	pc.onaddstream = function(evt){
-		if (video1.readyState === 0){
-			attachMediaStream(video1, evt.stream);
-			var connectionId = getKeyByValue(peerConnections,pc);
-			videosConn[connectionId] = video1;
-			isAttached["remoteVideo1"] = true;
+		if (video1){
+			if (video1.readyState === 0){
+				attachMediaStream(video1, evt.stream);
+				var connectionId = getKeyByValue(peerConnections,pc);
+				videosConn[connectionId] = video1;
+				isAttached["remoteVideo1"] = true;
+			}
 		}
-		else if (video2.readyState === 0 && video1.readyState === 4){
-			attachMediaStream(video2, evt.stream);
-			var connectionId = getKeyByValue(peerConnections,pc);
-			videosConn[connectionId] = video2;
-			isAttached["remoteVideo2"] = true;
+		if (video2){
+			console.log('2')
+			if (video2.readyState === 0 && video1.readyState === 4){
+				attachMediaStream(video2, evt.stream);
+				var connectionId = getKeyByValue(peerConnections,pc);
+				videosConn[connectionId] = video2;
+				isAttached["remoteVideo2"] = true;
+			}
 		}
-		else if (video3.readyState === 0 && video2.readyState === 4){
-			attachMediaStream(video3, evt.stream);
-			var connectionId = getKeyByValue(peerConnections,pc);
-			videosConn[connectionId] = video3;
-			isAttached["remoteVideo3"] = true;
+		if (video3){
+			if (video3.readyState === 0 && video2.readyState === 4){
+				attachMediaStream(video3, evt.stream);
+				var connectionId = getKeyByValue(peerConnections,pc);
+				videosConn[connectionId] = video3;
+				isAttached["remoteVideo3"] = true;
+			}
 		}
-		else if (video4.readyState === 0 && video3.readyState === 4){
-			attachMediaStream(video4, evt.stream);
-			var connectionId = getKeyByValue(peerConnections,pc);
-			videosConn[connectionId] = video4;
-			isAttached["remoteVideo4"] = true;
-		};
+		if (video4){
+			if (video4.readyState === 0 && video3.readyState === 4){
+				attachMediaStream(video4, evt.stream);
+				var connectionId = getKeyByValue(peerConnections,pc);
+				videosConn[connectionId] = video4;
+				isAttached["remoteVideo4"] = true;
+			}
+		}
 	};
 	pc.oniceconnectionstatechange = function(evt){
 		if (pc.iceConnectionState === "disconnected") { 
@@ -124,6 +169,7 @@ function getPeerConnection(){
     			videosConn[connectionId].srcObject = null;
     			isAttached[videosConn[connectionId].id] = false;
     			delete videosConn[connectionId];
+    			delete peerConnections[connectionId];
     	}
 	}
 	return pc;
@@ -153,6 +199,7 @@ function displayError(error) {
 };
 
 function getStream(){
+	console.log('Trying to getStream()')
 	//pytanie: nowy objekt zawsze przyjmuje nazwe connection
 	try {
 		connection = getPeerConnection();
@@ -189,9 +236,7 @@ socket.on('ask', function(offer){
 
 socket.on('init', function(msg){
 	if (msg.user === loggedUserID){
-		setTimeout(function(){
-			getStream();
-		}, 5000);
+		getStream();
 	}
 });
 
@@ -229,34 +274,42 @@ function startFaceDetect(){
 var canvas = document.querySelector('canvas');
 	var ctx = canvas.getContext('2d');
 	var w, h, ratio
-video1.addEventListener('loadedmetadata', function(){
+if (video1){
+	video1.addEventListener('loadedmetadata', function(){
 		ratio = video1.videoWidth / video1.videoHeight;
 		w = video1.videoWidth - 100;
 		h = parseInt(w / ratio, 10);
 		canvas.width = w;
 		canvas.height = h
 	}, false);
-video2.addEventListener('loadedmetadata', function(){
+}
+if (video2){
+	video2.addEventListener('loadedmetadata', function(){
 		ratio = video2.videoWidth / video2.videoHeight;
 		w = video2.videoWidth - 100;
 		h = parseInt(w / ratio, 10);
 		canvas.width = w;
 		canvas.height = h
 	}, false);
-video3.addEventListener('loadedmetadata', function(){
+}
+if (video3){
+	video3.addEventListener('loadedmetadata', function(){
 		ratio = video3.videoWidth / video3.videoHeight;
 		w = video3.videoWidth - 100;
 		h = parseInt(w / ratio, 10);
 		canvas.width = w;
 		canvas.height = h
 	}, false);
-video4.addEventListener('loadedmetadata', function(){
+}
+if (video4){
+	video4.addEventListener('loadedmetadata', function(){
 		ratio = video4.videoWidth / video4.videoHeight;
 		w = video4.videoWidth - 100;
 		h = parseInt(w / ratio, 10);
 		canvas.width = w;
 		canvas.height = h
 	}, false);
+}
 
 function snapShot(video){
 	if (isAttached[video.id] === false){

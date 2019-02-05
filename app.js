@@ -33,8 +33,18 @@ filenames.forEach(function (filename) {
   const name = matches[1];
   const template = fs.readFileSync(partialsDir + '/' + filename, 'utf8');
   hbs.registerPartial(name, template);
+
 });
 //Partials
+
+hbs.registerHelper('ifequal',function(a, b,options)
+{
+    if (a==b){
+    	return options.fn(this);
+    } else {
+    	return options.inverse(this);
+    }
+});
 
 var serverPort = 3030;
 server.listen(process.env.PORT || serverPort);
@@ -74,15 +84,19 @@ io.sockets.on('connection', function(socket){
 	});
 	socket.on('ask', function(message) {
 		io.sockets.emit('ask', message);
+		console.log('ask:',message)
 	});
 	socket.on('candidate_transmision', function(message) {
 		io.sockets.emit('candidate_transmision', message);
+		console.log('candidate_transmision:',message)
 	});
 	socket.on('candidate_reciever', function(message) {
 		io.sockets.to(message.toSocket).emit('candidate_reciever', message);
+		console.log('candidate_reciever:',message)
 	});
 	socket.on('response', function(message) {
-		io.sockets.to(message.toSocket).emit('response', message);	
+		io.sockets.to(message.toSocket).emit('response', message);
+		console.log('response:',message)
 	});
 
 	socket.on('init', function(message){
