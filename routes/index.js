@@ -5,20 +5,24 @@ var path = require('path');
 
 var databasePort = 3306;
 var dataBaseName = 'BazaDanych';
+var userTableName = 'Users';
 
 const db = mysql.createConnection({
 	host: 'localhost',
 	user: 'root',
-	port: databasePort,
-	database: dataBaseName
+	port: databasePort
 });
 
-db.connect((err) =>{
-	if(err){
-		throw err;
-	}
-	console.log('Połączono z bazą danych na porcie: ' + databasePort)
-});
+function dbconnect(){
+	if (db.state === 'disconnected'){
+		db.connect((err) =>{
+			if(err){
+				throw err;
+			}
+			console.log('Połączono z bazą danych na porcie: ' + databasePort)
+		});	
+	}		
+}
 
 var bcrypt = require('bcrypt');
 const saltRounds = 10;
@@ -41,7 +45,32 @@ var sessionChecker = (req, res, next) => {
     }    
 };
 
+router.get('/createdatabase', (req, res) => {
+	var sql = "CREATE DATABASE IF NOT EXISTS BazaDanych";
+	db.query(sql, function (err, result) {
+    	if (err) throw err;
+    	console.log("Database created");
+  	});
+  	db.database = dataBaseName;
+  	res.redirect('/');
+})
+
+router.get('/createusertable', (req, res) => {
+	var sql = "USE BazaDanych";
+	db.query(sql, function (err, result) {
+    	if (err) throw err;
+    	console.log("Using BazaDanych");
+  	});
+	var sql = "CREATE TABLE IF NOT EXISTS Users (id INT(11) NOT NULL AUTO_INCREMENT, login VARCHAR(255) NOT NULL, password VARCHAR(255) NOT NULL, PRIMARY KEY (id))";
+	db.query(sql, function (err, result) {
+    	if (err) throw err;
+    	console.log("Table User created");
+  	});
+  	res.redirect('/');
+})
+
 router.get('/', sessionChecker, (req, res) => {
+	dbconnect();
 	if (req.session.user && req.cookies.user_sid) {
 		//res.cookie('user_sid');
         res.render('index', {user: req.session.user});
