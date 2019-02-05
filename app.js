@@ -60,10 +60,7 @@ app.use(session({
     key: 'user_sid',
     secret: 'fsdfdsfsdfsdfsdfsdf',
     resave: false,
-    saveUninitialized: false,
-    cookie: {
-        expires: 600000
-    }
+    saveUninitialized: false
 }));
 
 app.use('/', routes);

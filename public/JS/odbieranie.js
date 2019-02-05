@@ -27,6 +27,11 @@ var video2attached = false;
 var video3attached = false;
 var video4attached = false;
 
+var cam1btn = document.getElementById('cam1btn');
+var cam2btn = document.getElementById('cam2btn');
+var cam3btn = document.getElementById('cam3btn');
+var cam4btn = document.getElementById('cam4btn');
+
 var faceDetectedAudio = document.getElementById("faceDetectedAudio"); 
 
 var currentdate = new Date();
@@ -79,41 +84,66 @@ function getBrowserRTCConnectionObj () {
 	}
 }
 
-function show1(){
-	$("#video1div").css('display', "")
-	$("remoteVideo1").css('width', "auto;", 'height', "auto;");
-	$("#video2div").css('display', "None")
-	$("#video3div").css('display', "None")
-	$("#video4div").css('display', "None")
+
+function btnCheck(){
+	if (isAttached["remoteVideo1"] === false){
+		$('#cam1btn').prop('disabled', true);
+	} else {
+		$('#cam1btn').prop('disabled', false);
+	}
+	if (isAttached["remoteVideo2"] === false){
+		$('#cam2btn').prop('disabled', true);
+	} else {
+		$('#cam2btn').prop('disabled', false);
+	}
+	if (isAttached["remoteVideo3"] === false){
+		$('#cam3btn').prop('disabled', true);
+	} else {
+		$('#cam3btn').prop('disabled', false);
+	}
+	if (isAttached["remoteVideo4"] === false){
+		$('#cam4btn').prop('disabled', true);
+	} else {
+		$('#cam4btn').prop('disabled', false);
+	}
 }
 
-function show2(){
-	$("#video1div").css('display', "None")
-	$("#video2div").css('display', "")
-	$("#video3div").css('display', "None")
-	$("#video4div").css('display', "None")
-}
 
-function show3(){
-	$("#video1div").css('display', "None")
-	$("#video2div").css('display', "None")
-	$("#video3div").css('display', "")
-	$("#video4div").css('display', "None")
-}
+function showVideo(videoNumber){
 
-function show4(){
-	$("#video1div").css('display', "None")
-	$("#video2div").css('display', "None")
-	$("#video3div").css('display', "None")
-	$("#video4div").css('display', "")
-}
-
-function showAll(){
-	$("#video1div").css('display', "")
-	$("#video2div").css('display', "")
-	$("#video3div").css('display', "")
-	$("#video4div").css('display', "")
-}
+	switch(videoNumber){
+		case 1:
+			$("#video1div").css('display', "")
+			$("#video2div").css('display', "None")
+			$("#video3div").css('display', "None")
+			$("#video4div").css('display', "None")
+			break;
+		case 2:
+			$("#video1div").css('display', "None")
+			$("#video2div").css('display', "")
+			$("#video3div").css('display', "None")
+			$("#video4div").css('display', "None")
+			break;
+		case 3:
+			$("#video1div").css('display', "None")
+			$("#video2div").css('display', "None")
+			$("#video3div").css('display', "")
+			$("#video4div").css('display', "None")
+			break;
+		case 4:
+			$("#video1div").css('display', "None")
+			$("#video2div").css('display', "None")
+			$("#video3div").css('display', "None")
+			$("#video4div").css('display', "")
+			break;
+		case 'all':
+			$("#video1div").css('display', "")
+			$("#video2div").css('display', "")
+			$("#video3div").css('display', "")
+			$("#video4div").css('display', "")
+			break;
+	}
+}	
 
 function getPeerConnection(){
 	var pc = getBrowserRTCConnectionObj();
@@ -138,7 +168,6 @@ function getPeerConnection(){
 			}
 		}
 		if (video2){
-			console.log('2')
 			if (video2.readyState === 0 && video1.readyState === 4){
 				attachMediaStream(video2, evt.stream);
 				var connectionId = getKeyByValue(peerConnections,pc);
@@ -162,6 +191,7 @@ function getPeerConnection(){
 				isAttached["remoteVideo4"] = true;
 			}
 		}
+		btnCheck();
 	};
 	pc.oniceconnectionstatechange = function(evt){
 		if (pc.iceConnectionState === "disconnected") { 
@@ -170,6 +200,7 @@ function getPeerConnection(){
     			isAttached[videosConn[connectionId].id] = false;
     			delete videosConn[connectionId];
     			delete peerConnections[connectionId];
+    			btnCheck();
     	}
 	}
 	return pc;
@@ -199,7 +230,6 @@ function displayError(error) {
 };
 
 function getStream(){
-	console.log('Trying to getStream()')
 	//pytanie: nowy objekt zawsze przyjmuje nazwe connection
 	try {
 		connection = getPeerConnection();

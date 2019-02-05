@@ -41,6 +41,7 @@ function closeConnection(){
   if (connection){
     connection.removeTrack(sender);
     connection.close();
+    connection = null;
     $('#initBtn').prop('disabled', false);
     $('#stopBtn').prop('disabled', true);
     video.pause();
