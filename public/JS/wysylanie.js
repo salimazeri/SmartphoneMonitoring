@@ -8,6 +8,7 @@ var peerConnections = {};
 var track, sender;
 var dc = null;
 var currentdate = new Date();
+var connectionNumber = 1;
 var time = currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + currentdate.getSeconds();
 var video = document.getElementById('localVideo');
 var options_without_restart = {offerToReceivseAudio: false,
@@ -29,7 +30,7 @@ var ID = function () {
 
 function getBrowserRTCConnectionObj () {
 var servers = {'iceServers': [
-    {url:'stun:stun1.l.google.com:19302'},
+    {url:'stun:stun2.l.google.com:19302'},
     {
         url: 'turn:turn.anyfirewall.com:443?transport=tcp',
         credential: 'webrtc',
@@ -51,6 +52,17 @@ var servers = {'iceServers': [
 socket.on('ask', function(){
   console.log('asked');
 })
+
+function makeid() {
+  var text = "";
+  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$";
+
+  for (var i = 0; i < 10; i++)
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+  return text;
+}
+
 function getPeerConnection(){
   var pc = getBrowserRTCConnectionObj();
   id = ID();
@@ -68,13 +80,13 @@ function getPeerConnection(){
       console.log(err)
     }
   }
-  var isNegotiating = false;
+  //var isNegotiating = false;
   pc.onnegotiationneeded = async e => {
-      if (isNegotiating){
-        console.log('skipping negotiation')
-        return;
-      }
-      isNegotiating = true;
+      //if (isNegotiating){
+      //  console.log('skipping negotiation')
+      //  return;
+      //}
+      //isNegotiating = true;
       try{
           await pc.createOffer(options_without_restart).then(onCreateOfferSuccess, onCreateOfferError)
       } catch(e) {
@@ -86,7 +98,9 @@ function getPeerConnection(){
   async function onCreateOfferSuccess(sdp){
       //console.log(sdp);
       await pc.setLocalDescription(await new RTCSessionDescription(sdp));
-      socket.emit('ask', {"sdp":JSON.stringify(pc.localDescription),
+      console.log(connectionNumber);
+      socket.emit('ask', {"id": makeid(),
+                          "sdp":JSON.stringify(pc.localDescription),
                           "user": loggedUserID,
                           "fromSocket": ownSocket});
       console.log('offercreated');

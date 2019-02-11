@@ -1,3 +1,5 @@
+//"use strict";
+
 var socket = io.connect();
 var videosConn = {};
 var isAttached = {"remoteVideo1": false,"remoteVideo2": false,"remoteVideo3": false,"remoteVideo4": false};
@@ -10,7 +12,7 @@ var ownSocket = null;
 var socketSwitch = true;
 var currTransmiterSocket = null;
 var dc = null;
-//var canConnect = true;
+const connections = [];
 var getStreamDelay = 0;
 
 var video1 = document.getElementById('remoteVideo1');
@@ -172,41 +174,43 @@ function getPeerConnection(){
 			console.log(error)
 		};
 
-	pc.onaddstream = async function(evt){
+	pc.onaddstream = function(evt){
 		console.log('onaddstream triggered');
-
-		if (video1){
-			if (video1.readyState === 0){
-				video1.srcObject = evt.stream;
-				var connectionId = getKeyByValue(peerConnections,pc);
-				videosConn[connectionId] = video1;
-				isAttached["remoteVideo1"] = true;
-			}
+		console.log(evt);
+		
+		if (video1.srcObject === null){
+			console.log(video1.srcObject );
+			video1.srcObject = evt.stream;
+			var connectionId = getKeyByValue(peerConnections,pc);
+			videosConn[connectionId] = video1;
+			isAttached["remoteVideo1"] = true;
 		}
-		if (video2){
-			if (video2.readyState === 0 && video1.readyState === 4){
-				video2.srcObject = evt.stream
-				var connectionId = getKeyByValue(peerConnections,pc);
-				videosConn[connectionId] = video2;
-				isAttached["remoteVideo2"] = true;
-			}
+	
+		else if (video2.srcObject === null && video1.srcObject !== null){
+			console.log('video2');
+			console.log(video1.srcObject);
+			video2.srcObject = evt.stream
+			var connectionId = getKeyByValue(peerConnections,pc);
+			videosConn[connectionId] = video2;
+			isAttached["remoteVideo2"] = true;
 		}
-		if (video3){
-			if (video3.readyState === 0 && video2.readyState === 4){
-				video3.srcObject = evt.stream
-				var connectionId = getKeyByValue(peerConnections,pc);
-				videosConn[connectionId] = video3;
-				isAttached["remoteVideo3"] = true;
-			}
+	
+		else if (video3.srcObject === null && video2.srcObject !== null){
+			console.log('video3');
+			video3.srcObject = evt.stream
+			var connectionId = getKeyByValue(peerConnections,pc);
+			videosConn[connectionId] = video3;
+			isAttached["remoteVideo3"] = true;
 		}
-		if (video4){
-			if (video4.readyState === 0 && video3.readyState === 4){
-				video4.srcObject = evt.stream			
-				var connectionId = getKeyByValue(peerConnections,pc);
-				videosConn[connectionId] = video4;
-				isAttached["remoteVideo4"] = true;
-			}
+	
+		else if (video4.srcObject === null && video3.srcObject !== null){
+			console.log('video4');
+			video4.srcObject = evt.stream			
+			var connectionId = getKeyByValue(peerConnections,pc);
+			videosConn[connectionId] = video4;
+			isAttached["remoteVideo4"] = true;
 		}
+		
 		btnCheck();
 	};
 	pc.oniceconnectionstatechange = async function(evt){
@@ -250,22 +254,6 @@ function checkSignalingState(except_connection){
 	return true;
 }
 
-async function gotDescription(sdp) {
-	console.log('sdp in gotDescription',sdp);
-	await connection.setLocalDescription(sdp,
-	function() {
-	//tutaj połączenie staje się zajęte.
-	registerIceCandidate();
-	socket.emit('response', {"sdp": sdp,
-							 "user": loggedUserID,
-							 "fromSocket": ownSocket,
-							 "toSocket": currTransmiterSocket});
-	 }, function(error){
-			console.log(error)
-		});
-	//console.log(connection.signalingState)
-}
-
 function registerIceCandidate() {
 	try{
 		for(var i = 0; i < TempIceCandidates.length; i++) {
@@ -280,43 +268,32 @@ function registerIceCandidate() {
 	}
 }
 
-function getStream(sdp){
-	//pytanie: nowy objekt zawsze przyjmuje nazwe connection
-
-		console.log(time, 'getStream()');
-		connection = getPeerConnection();
-		console.log(connection);
-		//connection.oniceconnectionstatechange = removeEmptyStream;
-		connection.setRemoteDescription(new RTCSessionDescription(sdp),
-		function() {
-			connection.createAnswer().then(gotDescription);
-				//toggleVideo();
-		}, function(error){
-			console.log(error)
-		});
-		
-
-};
-
-
+socket.on('ask', async offer => {
+  try {
+    if (offer.user != loggedUserID){
+    	return;
+    }
+    if (!connections[offer.id]) {
+      connections[offer.id] = getPeerConnection();
+      registerIceCandidate(connections[offer.id]);
+    }
+    const connection = connections[offer.id];
+    await connection.setRemoteDescription(JSON.parse(offer.sdp));
+    await connection.setLocalDescription(await connection.createAnswer());
+    socket.emit('response', {'sdp': connection.localDescription,
+                             'user': loggedUserID,
+                             'fromSocket': ownSocket,
+                             'toSocket': offer.fromSocket});
+  } catch (err) {
+    console.log(err);
+  }
+});
 
 socket.on('candidate_transmision', function(candidate){
 	if (candidate.user === loggedUserID && candidate.socket === currTransmiterSocket){
 		TempIceCandidates.push(candidate.candidate);	
 	}
 	
-});
-
-socket.on('ask', function(offer){
-if (offer.user === loggedUserID){
-	socket.emit('busy', {"state": "busy",
-						 "user": loggedUserID})
-	//TempDescriptions = JSON.parse();
-	//console.log(offer.sdp)
-	currTransmiterSocket = offer.fromSocket;
-	console.log('sdp in ask',JSON.parse(offer.sdp));
-	getStream(JSON.parse(offer.sdp));
-}
 });
 
 socket.on('socket', function(msg){
@@ -403,7 +380,7 @@ function snapShot(video){
 	document.body.appendChild(link);
 	link.click();
 	document.body.removeChild(link);
-	delete link;
+	link = null;
 }
 function stopFaceDetect(){
 	stopInterval = true;
