@@ -1,19 +1,17 @@
-//TODO: zdarzenie gdy strona wysylajaca sie wywala( zmiana video na obrazek, potem zastapienie na video gdy nadejdzie nowy)
-//	aktualnie robione, rozróżnianie obiejktów RTCPeerConnection
-//DONE: StopFaceDetect
-//TOOD: SetInterval na init() w odbieraniu
-//TODO: SetInterval na sendStream jak dissconnected dopóki połączy
-//TODO: Rozmiar video a rozmiar źródła obrazu
+var socket = io.connect();
 var videosConn = {};
 var isAttached = {"remoteVideo1": false,"remoteVideo2": false,"remoteVideo3": false,"remoteVideo4": false};
 var peerConnections = {};
+var dataChannels = {};
 var TempDescriptions = {};
 var TempIceCandidates = [];
 var connection = {};
 var ownSocket = null;
 var socketSwitch = true;
 var currTransmiterSocket = null;
-var socket = io.connect();
+var dc = null;
+//var canConnect = true;
+var getStreamDelay = 0;
 
 var video1 = document.getElementById('remoteVideo1');
 var video2 = document.getElementById('remoteVideo2');
@@ -56,9 +54,14 @@ var date_time = dd+'.'+
 				currentdate.getMinutes()+'-'+
 				ss;
 
-var id =0;
 
+var id = 0;
 var loggedUserID = document.getElementById("user").innerHTML;
+
+const dataChannelOptions = {
+  ordered: false,
+  maxPacketLifeTime: 3000,
+};
 
 var ID = function () {
   //return '_' + Math.random().toString(36).substr(2, 9);
@@ -66,22 +69,29 @@ var ID = function () {
   return id;
 };
 
+
 function getKeyByValue(object, value) {
   return Object.keys(object).find(key => object[key] === value);
 }
 
 function getBrowserRTCConnectionObj () {
-	var servers = {'iceServers': [{'url': 'stun:stun.services.mozilla.com'}, {'url': 'stun:stun.l.google.com:19302'}]};
-	
-	if (window.mozRTCPeerConnection) {
-		return new mozRTCPeerConnection(servers);
-	} else if (window.webkitRTCPeerConnection) {
-			return new webkitRTCPeerConnection(servers);
-	} else if (window.msRTCPeerConnection) {
-			return new msRTCPeerConnection(servers);
-	} else {
-		return new RTCPeerConnection(servers);
-	}
+var servers = {'iceServers': [
+    {url:'stun:stun1.l.google.com:19302'},
+    {
+        url: 'turn:turn.anyfirewall.com:443?transport=tcp',
+        credential: 'webrtc',
+        username: 'webrtc'
+}]};
+
+  if (window.mozRTCPeerConnection) {
+    return new mozRTCPeerConnection(servers);
+  } else if (window.webkitRTCPeerConnection) {
+      return new webkitRTCPeerConnection(servers);
+  } else if (window.msRTCPeerConnection) {
+      return new msRTCPeerConnection(servers);
+  } else {
+    return new RTCPeerConnection(servers);
+  }
 }
 
 
@@ -150,18 +160,24 @@ function getPeerConnection(){
 	id = ID();
 	peerConnections[id] = pc;
 
-	pc.onicecandidate = function(evt){
+	pc.onicecandidate = async function(evt){
 		if (evt.candidate) {
 			socket.emit('candidate_reciever', { "candidate": evt.candidate,
 												"user": loggedUserID,
 												"fromSocket": ownSocket,
 												"toSocket": currTransmiterSocket });
+			//tutaj połączenie staje się wolne.		
 		}
-	}, displayError;
-	pc.onaddstream = function(evt){
+	}, function(error){
+			console.log(error)
+		};
+
+	pc.onaddstream = async function(evt){
+		console.log('onaddstream triggered');
+
 		if (video1){
 			if (video1.readyState === 0){
-				attachMediaStream(video1, evt.stream);
+				video1.srcObject = evt.stream;
 				var connectionId = getKeyByValue(peerConnections,pc);
 				videosConn[connectionId] = video1;
 				isAttached["remoteVideo1"] = true;
@@ -169,7 +185,7 @@ function getPeerConnection(){
 		}
 		if (video2){
 			if (video2.readyState === 0 && video1.readyState === 4){
-				attachMediaStream(video2, evt.stream);
+				video2.srcObject = evt.stream
 				var connectionId = getKeyByValue(peerConnections,pc);
 				videosConn[connectionId] = video2;
 				isAttached["remoteVideo2"] = true;
@@ -177,7 +193,7 @@ function getPeerConnection(){
 		}
 		if (video3){
 			if (video3.readyState === 0 && video2.readyState === 4){
-				attachMediaStream(video3, evt.stream);
+				video3.srcObject = evt.stream
 				var connectionId = getKeyByValue(peerConnections,pc);
 				videosConn[connectionId] = video3;
 				isAttached["remoteVideo3"] = true;
@@ -185,7 +201,7 @@ function getPeerConnection(){
 		}
 		if (video4){
 			if (video4.readyState === 0 && video3.readyState === 4){
-				attachMediaStream(video4, evt.stream);
+				video4.srcObject = evt.stream			
 				var connectionId = getKeyByValue(peerConnections,pc);
 				videosConn[connectionId] = video4;
 				isAttached["remoteVideo4"] = true;
@@ -193,59 +209,93 @@ function getPeerConnection(){
 		}
 		btnCheck();
 	};
-	pc.oniceconnectionstatechange = function(evt){
-		if (pc.iceConnectionState === "disconnected") { 
-    			var connectionId = getKeyByValue(peerConnections,pc);
-    			videosConn[connectionId].srcObject = null;
-    			isAttached[videosConn[connectionId].id] = false;
-    			delete videosConn[connectionId];
-    			delete peerConnections[connectionId];
-    			btnCheck();
+	pc.oniceconnectionstatechange = async function(evt){
+		try{	
+			if (pc.iceConnectionState === 'connected'){
+				socket.emit('free', {"state": "free",
+									 "user": loggedUserID})
+				//canConnect = true;	
+			}
+			if (pc.iceConnectionState === "disconnected") { 
+				var connectionId = getKeyByValue(peerConnections,pc);
+				videosConn[connectionId].srcObject = null;
+				isAttached[videosConn[connectionId].id] = false;
+				delete videosConn[connectionId];
+				delete peerConnections[connectionId];
+				btnCheck();
+	    	}
+    	} catch(err) {
+    		console.log(err)
     	}
 	}
-	return pc;
+	
+	return peerConnections[id];
 }
 
-function gotDescription(bobDesc) {
-	connection.setLocalDescription(bobDesc,
+function checkSignalingState(except_connection){
+	var connId = getKeyByValue(peerConnections, except_connection)
+	delete peerConnections[connId]
+	//console.log(peerConnections)
+	for(var key in peerConnections){
+		//console.log(peerConnections[key])
+		//console.log(peerConnections[key], peerConnections[key].signalingState)
+		if (peerConnections[key].signalingState !== 'stable'){
+			peerConnections[connId] = except_connection;
+			return false;
+		}
+		
+	}
+	peerConnections[connId] = except_connection;
+	//console.log(peerConnections)
+	return true;
+}
+
+async function gotDescription(sdp) {
+	console.log('sdp in gotDescription',sdp);
+	await connection.setLocalDescription(sdp,
 	function() {
-			registerIceCandidate();
-			socket.emit('response', {"bobDesc": bobDesc,
-									 "user": loggedUserID,
-									 "fromSocket": ownSocket,
-									 "toSocket": currTransmiterSocket});
-	 }, displayError);
+	//tutaj połączenie staje się zajęte.
+	registerIceCandidate();
+	socket.emit('response', {"sdp": sdp,
+							 "user": loggedUserID,
+							 "fromSocket": ownSocket,
+							 "toSocket": currTransmiterSocket});
+	 }, function(error){
+			console.log(error)
+		});
+	//console.log(connection.signalingState)
 }
 
 function registerIceCandidate() {
-	for(var i = 0; i < TempIceCandidates.length; i++) {
+	try{
+		for(var i = 0; i < TempIceCandidates.length; i++) {
 		connection.addIceCandidate(
 			new RTCIceCandidate(TempIceCandidates[i]), function() {
-		}, displayError);
+		}, function(error){
+			console.log(error)
+		});
+		}
+	} catch(err){
+		console.log(err);
 	}
 }
 
-function displayError(error) {
-	console.error(error);
-};
-
-function getStream(){
+function getStream(sdp){
 	//pytanie: nowy objekt zawsze przyjmuje nazwe connection
-	try {
-		connection = getPeerConnection();
-		
-		//connection.oniceconnectionstatechange = removeEmptyStream;
-		connection.setRemoteDescription(
-			new RTCSessionDescription(TempDescriptions),
-			function() {
-				connection.createAnswer(gotDescription, displayError);
-				//toggleVideo();
-		}, displayError);
-	}
 
-	catch(err){
-		alert('There is no source, try to transmit stream.');
-	}
+		console.log(time, 'getStream()');
+		connection = getPeerConnection();
+		console.log(connection);
+		//connection.oniceconnectionstatechange = removeEmptyStream;
+		connection.setRemoteDescription(new RTCSessionDescription(sdp),
+		function() {
+			connection.createAnswer().then(gotDescription);
+				//toggleVideo();
+		}, function(error){
+			console.log(error)
+		});
+		
+
 };
 
 
@@ -258,22 +308,20 @@ socket.on('candidate_transmision', function(candidate){
 });
 
 socket.on('ask', function(offer){
-	if (offer.user === loggedUserID){
-		TempDescriptions = JSON.parse(offer.offer);
-		currTransmiterSocket = offer.socket;
-	}
-});
-
-socket.on('init', function(msg){
-	if (msg.user === loggedUserID){
-		getStream();
-	}
+if (offer.user === loggedUserID){
+	socket.emit('busy', {"state": "busy",
+						 "user": loggedUserID})
+	//TempDescriptions = JSON.parse();
+	//console.log(offer.sdp)
+	currTransmiterSocket = offer.fromSocket;
+	console.log('sdp in ask',JSON.parse(offer.sdp));
+	getStream(JSON.parse(offer.sdp));
+}
 });
 
 socket.on('socket', function(msg){
   if (socketSwitch === true){
     ownSocket = msg;
-    console.log('Socket sesji:',ownSocket)
     socketSwitch = false;  
   }
  });

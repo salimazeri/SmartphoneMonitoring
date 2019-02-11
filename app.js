@@ -11,7 +11,7 @@ var routes = require('./routes/index');
 var app = express();
 
 var server = require('http').createServer(app);
-var io = require('socket.io').listen(server);
+var io = require('socket.io', { rememberTransport: false, transports: ['WebSocket', 'Flash Socket', 'AJAX long-polling'] }).listen(server);
 
 app.set('views', (__dirname, 'views'));
 app.set('view engine', '.hbs');
@@ -65,40 +65,42 @@ app.use(session({
 
 app.use('/', routes);
 
-// catch 404
-
 
 //------------------------------------------------------------------------------------------------------------
 
 io.sockets.on('connection', function(socket){
 	connections.push(socket.id);
 	console.log('Połączenie: socket %s został podłączony', socket.id);
-	io.sockets.emit('socket', socket.id);
+	socket.emit('socket', socket.id);
 
 	socket.on('disconnect', function(data){
 		connections.splice(connections.indexOf(socket), 1);
 		console.log('Połączenie: socket %s został odłączony', socket.id);
 	});
 	socket.on('ask', function(message) {
-		io.sockets.emit('ask', message);
-		console.log('ask:',message)
+		socket.broadcast.emit('ask', message);
+		console.log('ask',message.user, message.socket)
 	});
 	socket.on('candidate_transmision', function(message) {
-		io.sockets.emit('candidate_transmision', message);
-		console.log('candidate_transmision:',message)
+		socket.broadcast.emit('candidate_transmision', message);
+		console.log('candidate_transmision:',message.user, message.socket, message.toSocket)
 	});
 	socket.on('candidate_reciever', function(message) {
-		io.sockets.to(message.toSocket).emit('candidate_reciever', message);
-		console.log('candidate_reciever:',message)
+		socket.to(message.toSocket).emit('candidate_reciever', message);
+		console.log('candidate_reciever:',message.user, message.fromSocket, message.toSocket)
 	});
 	socket.on('response', function(message) {
-		io.sockets.to(message.toSocket).emit('response', message);
-		console.log('response:',message)
+		socket.to(message.toSocket).emit('response', message);
+		console.log('response:',message.user, message.fromSocket, message.toSocke)
 	});
 
-	socket.on('init', function(message){
-		console.log('init');
-		io.sockets.emit('init', message);
+	socket.on('busy', function(message){
+		socket.broadcast.emit('busy', message);
+	});
+	socket.on('free', function(message){
+		socket.broadcast.emit('free', message);
 	});
 
 });
+
+// ZROBIĆ TO SAMO CO PRZY RESTARCIE ICE Z CANRESTART TYLKO PRZY NORMALNYM ŁĄCZENIU KILKU KAMER

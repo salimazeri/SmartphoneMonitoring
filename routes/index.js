@@ -74,6 +74,12 @@ var sessionChecker = (req, res, next) => {
     }    
 };
 
+router.get('/favicon.ico', (req,res) =>{
+	res.sendStatus(200);
+	res.send();
+	return;
+});
+
 router.get('/', sessionChecker, (req, res) => {	
 	if (req.session.user && req.cookies.user_sid) {
 		//res.cookie('user_sid');
