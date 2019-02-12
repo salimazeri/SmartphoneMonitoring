@@ -71,6 +71,18 @@ var ID = function () {
   return id;
 };
 
+if (document.readyState === "complete") {
+	console.log('document loaded');
+    socket.emit('pageLoaded');
+}
+
+function sendThatLoad(){
+	socket.emit('load')
+}
+
+function sendThatUnload(){
+	socket.emit('unload');
+}
 
 function getKeyByValue(object, value) {
   return Object.keys(object).find(key => object[key] === value);
@@ -78,12 +90,14 @@ function getKeyByValue(object, value) {
 
 function getBrowserRTCConnectionObj () {
 var servers = {'iceServers': [
-    {url:'stun:stun1.l.google.com:19302'},
+    {url:'stun:stun01.sipphone.com'},
+    {url:'stun:stun.ekiga.net'},
+    {url:'stun:stun.fwdnet.net'},
     {
-        url: 'turn:turn.anyfirewall.com:443?transport=tcp',
-        credential: 'webrtc',
-        username: 'webrtc'
-}]};
+      url: 'turn:numb.viagenie.ca',
+      credential: 'muazkh',
+      username: 'webrtc@live.com'
+    }]};
 
   if (window.mozRTCPeerConnection) {
     return new mozRTCPeerConnection(servers);
@@ -164,7 +178,8 @@ function getPeerConnection(){
 
 	pc.onicecandidate = async function(evt){
 		if (evt.candidate) {
-			socket.emit('candidate_reciever', { "candidate": evt.candidate,
+			console.log('onicecandidate');
+			socket.emit('candidate_reciever', { "candidate": await evt.candidate,
 												"user": loggedUserID,
 												"fromSocket": ownSocket,
 												"toSocket": currTransmiterSocket });
@@ -174,22 +189,19 @@ function getPeerConnection(){
 			console.log(error)
 		};
 
-	pc.onaddstream = function(evt){
-		console.log('onaddstream triggered');
-		console.log(evt);
+	pc.ontrack = async function(evt){
 		
 		if (video1.srcObject === null){
-			console.log(video1.srcObject );
-			video1.srcObject = evt.stream;
+			console.log("video1");
+			video1.srcObject = await evt.streams[0];
 			var connectionId = getKeyByValue(peerConnections,pc);
 			videosConn[connectionId] = video1;
 			isAttached["remoteVideo1"] = true;
 		}
 	
 		else if (video2.srcObject === null && video1.srcObject !== null){
-			console.log('video2');
-			console.log(video1.srcObject);
-			video2.srcObject = evt.stream
+			console.log('video2')
+			video2.srcObject = await evt.streams[0];
 			var connectionId = getKeyByValue(peerConnections,pc);
 			videosConn[connectionId] = video2;
 			isAttached["remoteVideo2"] = true;
@@ -197,7 +209,7 @@ function getPeerConnection(){
 	
 		else if (video3.srcObject === null && video2.srcObject !== null){
 			console.log('video3');
-			video3.srcObject = evt.stream
+			video3.srcObject = await evt.streams[0];
 			var connectionId = getKeyByValue(peerConnections,pc);
 			videosConn[connectionId] = video3;
 			isAttached["remoteVideo3"] = true;
@@ -205,7 +217,7 @@ function getPeerConnection(){
 	
 		else if (video4.srcObject === null && video3.srcObject !== null){
 			console.log('video4');
-			video4.srcObject = evt.stream			
+			video4.srcObject = await evt.streams[0];		
 			var connectionId = getKeyByValue(peerConnections,pc);
 			videosConn[connectionId] = video4;
 			isAttached["remoteVideo4"] = true;
@@ -254,14 +266,13 @@ function checkSignalingState(except_connection){
 	return true;
 }
 
-function registerIceCandidate() {
+function registerIceCandidate(conn) {
 	try{
 		for(var i = 0; i < TempIceCandidates.length; i++) {
-		connection.addIceCandidate(
-			new RTCIceCandidate(TempIceCandidates[i]), function() {
-		}, function(error){
-			console.log(error)
-		});
+			
+			conn.addIceCandidate(TempIceCandidates[i]).catch(e =>{
+				console.log('błąd podczas dodawania ICE candidate:',e);
+			})
 		}
 	} catch(err){
 		console.log(err);
@@ -274,10 +285,13 @@ socket.on('ask', async offer => {
     	return;
     }
     if (!connections[offer.id]) {
-      connections[offer.id] = getPeerConnection();
-      registerIceCandidate(connections[offer.id]);
+    	connections[offer.id] = getPeerConnection();
+    	registerIceCandidate(connections[offer.id]);
+    	console.log('ASK, połączenie utworzone');
+      
     }
     const connection = connections[offer.id];
+    currTransmiterSocket = offer.fromSocket;
     await connection.setRemoteDescription(JSON.parse(offer.sdp));
     await connection.setLocalDescription(await connection.createAnswer());
     socket.emit('response', {'sdp': connection.localDescription,
@@ -291,6 +305,7 @@ socket.on('ask', async offer => {
 
 socket.on('candidate_transmision', function(candidate){
 	if (candidate.user === loggedUserID && candidate.socket === currTransmiterSocket){
+		console.log('CT:',candidate.candidate)
 		TempIceCandidates.push(candidate.candidate);	
 	}
 	
@@ -362,7 +377,7 @@ if (video4){
 		w = video4.videoWidth - 100;
 		h = parseInt(w / ratio, 10);
 		canvas.width = w;
-		canvas.height = h
+		canvas.height = h;
 	}, false);
 }
 

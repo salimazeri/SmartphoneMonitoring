@@ -7,6 +7,7 @@ var currRecieverSocket = null;
 var peerConnections = {};
 var track, sender;
 var dc = null;
+var isPageLoaded = false;
 var currentdate = new Date();
 var connectionNumber = 1;
 var time = currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + currentdate.getSeconds();
@@ -30,12 +31,14 @@ var ID = function () {
 
 function getBrowserRTCConnectionObj () {
 var servers = {'iceServers': [
-    {url:'stun:stun2.l.google.com:19302'},
+    {url:'stun:stun01.sipphone.com'},
+    {url:'stun:stun.ekiga.net'},
+    {url:'stun:stun.fwdnet.net'},
     {
-        url: 'turn:turn.anyfirewall.com:443?transport=tcp',
-        credential: 'webrtc',
-        username: 'webrtc'
-}]};
+      url: 'turn:numb.viagenie.ca',
+      credential: 'muazkh',
+      username: 'webrtc@live.com'
+    }]};
 
     if (window.mozRTCPeerConnection) {
           return new mozRTCPeerConnection(servers);
@@ -49,9 +52,6 @@ var servers = {'iceServers': [
   }
 
 //setInterval(function(){console.log(canConnect)}, 100);
-socket.on('ask', function(){
-  console.log('asked');
-})
 
 function makeid() {
   var text = "";
@@ -62,6 +62,13 @@ function makeid() {
 
   return text;
 }
+
+socket.on('load', function(){
+  isPageLoaded = true;
+})
+socket.on('unload', function(){
+  isPageLoaded = false;
+})
 
 function getPeerConnection(){
   var pc = getBrowserRTCConnectionObj();
@@ -120,26 +127,37 @@ function getPeerConnection(){
               $('#initBtn').prop('disabled', false)
           } 
           if (pc.iceConnectionState === "disconnected"){
-            setTimeout(function(){
-              iceRestart();
-            },1000)
+            restartOnPageLoad();
           }
       } catch(err) {
         console.log(err)
       }
   }
 
+  function restartOnPageLoad(){
+    setTimeout(function(){
+      if (isPageLoaded){
+        console.log('strona zostala zaladowana')
+        setTimeout(function(){
+          iceRestart();
+        })
+      } else {
+        console.log('strona nie zostala zaladowana')
+        restartOnPageLoad()
+      }
+    },3000);
+  }
+
   async function iceRestart(event){  
       try{
           console.log(time, 'Strona z oglądaniem nie jest zajęta, restartuje ice');
-          await pc.createOffer(options_with_restart).then(onCreateOfferSuccess, onCreateOfferError);
+          await pc.createOffer(options_without_restart).then(onCreateOfferSuccess, onCreateOfferError);
       } catch(error) {
           console.log(error);
       } 
   }
   return pc;
 }
-
 
 function start() {
     try {
@@ -157,8 +175,7 @@ function start() {
                 }, function(stream){
                     var str = stream;
                     pc = getPeerConnection();
-                    stream.getTracks().forEach((track) =>
-                        pc.addTrack(track, stream));
+                    pc.addTrack(stream.getVideoTracks()[0], stream);
                     video.srcObject = stream;    
                 }, function(error){
                     console.log(error);

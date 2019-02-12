@@ -79,19 +79,19 @@ io.sockets.on('connection', function(socket){
 	});
 	socket.on('ask', function(message) {
 		socket.broadcast.emit('ask', message);
-		console.log('ask',message.user, message.socket)
+		console.log('------------ ASK ------------')
 	});
 	socket.on('candidate_transmision', function(message) {
 		socket.broadcast.emit('candidate_transmision', message);
-		console.log('candidate_transmision:',message.user, message.socket, message.toSocket)
+		console.log('ct:',message.candidate.candidate);
 	});
 	socket.on('candidate_reciever', function(message) {
 		socket.to(message.toSocket).emit('candidate_reciever', message);
-		console.log('candidate_reciever:',message.user, message.fromSocket, message.toSocket)
+		console.log('cr:',message.candidate.candidate);
 	});
 	socket.on('response', function(message) {
 		socket.to(message.toSocket).emit('response', message);
-		console.log('response:',message.user, message.fromSocket, message.toSocke)
+		console.log('------------ RESPONSE ------------')
 	});
 
 	socket.on('busy', function(message){
@@ -100,6 +100,12 @@ io.sockets.on('connection', function(socket){
 	socket.on('free', function(message){
 		socket.broadcast.emit('free', message);
 	});
+	socket.on('load', function(){
+		socket.broadcast.emit('load');
+	})
+	socket.on('unload', function(){
+		socket.broadcast.emit('unload');
+	})
 
 });
 
