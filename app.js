@@ -7,10 +7,17 @@ var session = require('express-session');
 var cookieParser = require('cookie-parser');
 var fs = require('fs');
 var routes = require('./routes/index');
+var https = require('https')
+var path = require('path');
 
 var app = express();
 
-var server = require('http').createServer(app);
+//var server = require('http').createServer(app);
+const httpsOptions = {
+	cert: fs.readFileSync(path.join(__dirname, 'ssl', 'server.crt')),
+	key: fs.readFileSync(path.join(__dirname, 'ssl', 'server.key'))
+};
+var server = https.createServer(httpsOptions, app)
 var io = require('socket.io', { rememberTransport: false, transports: ['WebSocket', 'Flash Socket', 'AJAX long-polling'] }).listen(server);
 
 app.set('views', (__dirname, 'views'));
@@ -46,9 +53,13 @@ hbs.registerHelper('ifequal',function(a, b,options)
     }
 });
 
+
 var serverPort = 3030;
-server.listen(process.env.PORT || serverPort);
-console.log("Połączono z serwerem na porcie: " + serverPort);
+//server.listen(process.env.PORT || serverPort);
+server.listen(serverPort, function(){
+		console.log("Połączono z serwerem na porcie: " + serverPort);
+	})
+//console.log("Połączono z serwerem na porcie: " + serverPort);
 
 //app.use(express.static(__dirname + '/JavaScript'));
 app.use(express.static('public'));
@@ -105,6 +116,9 @@ io.sockets.on('connection', function(socket){
 	})
 	socket.on('unload', function(){
 		socket.broadcast.emit('unload');
+	})
+	socket.on('aaa', function(){
+		socket.broadcast.emit('aaa');
 	})
 
 });

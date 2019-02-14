@@ -1,4 +1,12 @@
+//"use strict";
+
 var socket = io.connect();
+RTCSessionDescription = window.RTCSessionDescription ||
+  window.mozRTCSessionDescription;
+RTCPeerConnection = window.RTCPeerConnection ||
+  window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+RTCIceCandidate = window.RTCIceCandidate ||
+  window.mozRTCIceCandidate;
 var ownSocket = null;
 var socketSwitch = true;
 var canConnect = true;
@@ -9,10 +17,10 @@ var track, sender;
 var dc = null;
 var isPageLoaded = false;
 var currentdate = new Date();
-var connectionNumber = 1;
+var connectionNumber;
 var time = currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + currentdate.getSeconds();
 var video = document.getElementById('localVideo');
-var options_without_restart = {offerToReceivseAudio: false,
+var options_without_restart = {offerToReceiveAudio: false,
                                offerToReceiveVideo: true,
                                iceRestart: false};
 
@@ -20,7 +28,10 @@ var options_with_restart = {offerToReceiveAudio: false,
                             offerToReceiveVideo: true,
                             iceRestart: true};
 
-
+var constraints = {
+                    audio: false,
+                    video: true
+                  };
 var loggedUserID = document.getElementById("user").innerHTML;
 var id = 0;
 var ID = function () {
@@ -31,14 +42,18 @@ var ID = function () {
 
 function getBrowserRTCConnectionObj () {
 var servers = {'iceServers': [
-    {url:'stun:stun01.sipphone.com'},
-    {url:'stun:stun.ekiga.net'},
-    {url:'stun:stun.fwdnet.net'},
+    {'url':'stun:stun.ekiga.net'},
+    {'url':'stun:stun.fwdnet.net'},
     {
-      url: 'turn:numb.viagenie.ca',
-      credential: 'muazkh',
-      username: 'webrtc@live.com'
-    }]};
+      url: 'turn:192.158.29.39:3478?transport=udp',
+      credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+      username: '28224511:1379330808'
+  },
+  {
+      url: 'turn:192.158.29.39:3478?transport=tcp',
+      credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+      username: '28224511:1379330808'
+}]};
 
     if (window.mozRTCPeerConnection) {
           return new mozRTCPeerConnection(servers);
@@ -75,10 +90,11 @@ function getPeerConnection(){
   id = ID();
   peerConnections[id] = pc;
 
-  pc.onicecandidate = function(evt){
+  pc.onicecandidate = async function(evt){
     try{
-        if (evt.candidate) {
-            socket.emit('candidate_transmision', { "candidate": evt.candidate,
+        if (await evt.candidate) {
+            socket.emit('candidate_transmision', {  "id": connectionNumber,
+                                                    "candidate": await evt.candidate,
                                                     "user": loggedUserID,
                                                     "socket": ownSocket,
                                                     "toSocket": currRecieverSocket});
@@ -106,7 +122,8 @@ function getPeerConnection(){
       //console.log(sdp);
       await pc.setLocalDescription(await new RTCSessionDescription(sdp));
       console.log(connectionNumber);
-      socket.emit('ask', {"id": makeid(),
+      connectionNumber = makeid();
+      socket.emit('ask', {"id": connectionNumber,
                           "sdp":JSON.stringify(pc.localDescription),
                           "user": loggedUserID,
                           "fromSocket": ownSocket});
@@ -150,37 +167,55 @@ function getPeerConnection(){
 
   async function iceRestart(event){  
       try{
-          console.log(time, 'Strona z oglądaniem nie jest zajęta, restartuje ice');
-          await pc.createOffer(options_without_restart).then(onCreateOfferSuccess, onCreateOfferError);
+          socket.emit('aaa');
+          await pc.createOffer(options_with_restart).then(onCreateOfferSuccess, onCreateOfferError);
       } catch(error) {
           console.log(error);
       } 
   }
   return pc;
 }
+/*
+setInterval(function(){showlog()},100);
+function showlog() {
+    var old = console.log;
+    var logger = document.getElementById('logger');
+    console.log = function (message) {
+        if (typeof message == 'object') {
+            logger.innerHTML += (JSON && JSON.stringify ? JSON.stringify(message) : message) + '<br />';
+        } else {
+            logger.innerHTML += message + '<br />';
+        }
+    }
+};
+*/
+window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
 
 function start() {
     try {
 
         $('#initBtn').prop('disabled', true);
-        navigator.getUserMedia = navigator.getUserMedia ||
-                                 navigator.webkitGetUserMedia ||
-                                 navigator.mozGetUserMedia;
+        navigator.mediaDevices.getUserMedia = navigator.mediaDevices.getUserMedia ||
+                                 navigator.mediaDevices.webkitGetUserMedia ||
+                                 navigator.mediaDevices.mozGetUserMedia;
 
-        if (navigator.getUserMedia){
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
             const stream =
-                navigator.getUserMedia({
-                    audio: false,
-                    video: true
-                }, function(stream){
-                    var str = stream;
-                    pc = getPeerConnection();
-                    pc.addTrack(stream.getVideoTracks()[0], stream);
-                    video.srcObject = stream;    
-                }, function(error){
-                    console.log(error);
-                });
-          
+                navigator.mediaDevices.getUserMedia(constraints)
+                .then(function(stream){
+                  if (video.mozSrcObject !== undefined) {
+                      video.mozSrcObject = stream;
+                  } else {
+                      video.srcObject = stream;
+                  }
+                  var str = stream;
+                  pc = getPeerConnection();
+                  pc.addTrack(stream.getVideoTracks()[0], stream);
+                  video.srcObject = stream;
+                })
+                .catch(function(err){
+                  console.log("getUserMedia error:",err);
+                })
         }
 
     } catch (err) {

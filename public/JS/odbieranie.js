@@ -1,5 +1,12 @@
 //"use strict";
+/* global mozRTCIceCandidate, RTCIceCandidate, RTCSessionDescription, mozRTCSessionDescription */
 
+RTCSessionDescription = window.RTCSessionDescription ||
+	window.mozRTCSessionDescription;
+RTCPeerConnection = window.RTCPeerConnection ||
+	window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+RTCIceCandidate = window.RTCIceCandidate ||
+	window.mozRTCIceCandidate;
 var socket = io.connect();
 var videosConn = {};
 var isAttached = {"remoteVideo1": false,"remoteVideo2": false,"remoteVideo3": false,"remoteVideo4": false};
@@ -90,14 +97,18 @@ function getKeyByValue(object, value) {
 
 function getBrowserRTCConnectionObj () {
 var servers = {'iceServers': [
-    {url:'stun:stun01.sipphone.com'},
-    {url:'stun:stun.ekiga.net'},
-    {url:'stun:stun.fwdnet.net'},
+    {'url':'stun:stun.ekiga.net'},
+    {'url':'stun:stun.fwdnet.net'},
     {
-      url: 'turn:numb.viagenie.ca',
-      credential: 'muazkh',
-      username: 'webrtc@live.com'
-    }]};
+	    url: 'turn:192.158.29.39:3478?transport=udp',
+	    credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+	    username: '28224511:1379330808'
+	},
+	{
+	    url: 'turn:192.158.29.39:3478?transport=tcp',
+	    credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+	    username: '28224511:1379330808'
+}]};
 
   if (window.mozRTCPeerConnection) {
     return new mozRTCPeerConnection(servers);
@@ -133,7 +144,7 @@ function btnCheck(){
 		$('#cam4btn').prop('disabled', false);
 	}
 }
-
+btnCheck();
 
 function showVideo(videoNumber){
 
@@ -177,7 +188,7 @@ function getPeerConnection(){
 	peerConnections[id] = pc;
 
 	pc.onicecandidate = async function(evt){
-		if (evt.candidate) {
+		if (await evt.candidate) {
 			console.log('onicecandidate');
 			socket.emit('candidate_reciever', { "candidate": await evt.candidate,
 												"user": loggedUserID,
@@ -190,7 +201,7 @@ function getPeerConnection(){
 		};
 
 	pc.ontrack = async function(evt){
-		
+		console.log('ontrack');
 		if (video1.srcObject === null){
 			console.log("video1");
 			video1.srcObject = await evt.streams[0];
@@ -280,37 +291,49 @@ function registerIceCandidate(conn) {
 }
 
 socket.on('ask', async offer => {
-  try {
-    if (offer.user != loggedUserID){
-    	return;
-    }
-    if (!connections[offer.id]) {
-    	connections[offer.id] = getPeerConnection();
-    	registerIceCandidate(connections[offer.id]);
-    	console.log('ASK, połączenie utworzone');
+	console.log(offer);
+  	try {
+    	if (offer.user != loggedUserID){
+    		return;
+    	}
+    	if (!connections[offer.id]) {
+    		connections[offer.id] = getPeerConnection();
+    		
+    		console.log('ASK, połączenie utworzone');
       
-    }
-    const connection = connections[offer.id];
-    currTransmiterSocket = offer.fromSocket;
-    await connection.setRemoteDescription(JSON.parse(offer.sdp));
-    await connection.setLocalDescription(await connection.createAnswer());
-    socket.emit('response', {'sdp': connection.localDescription,
-                             'user': loggedUserID,
-                             'fromSocket': ownSocket,
-                             'toSocket': offer.fromSocket});
-  } catch (err) {
-    console.log(err);
-  }
+    	}
+	    const connection = connections[offer.id];
+	    currTransmiterSocket = offer.fromSocket;
+	    console.log('currTransmiterSocket:', currTransmiterSocket)
+	    await connection.setRemoteDescription(JSON.parse(offer.sdp));
+	    await connection.setLocalDescription(await connection.createAnswer());
+	    await registerIceCandidate(connections[offer.id]);
+	    socket.emit('response', {'sdp': connection.localDescription,
+	                             'user': loggedUserID,
+	                             'fromSocket': ownSocket,
+	                             'toSocket': offer.fromSocket});
+  	} catch (err) {
+    	console.log(err);
+  	}
 });
-
+/*
 socket.on('candidate_transmision', function(candidate){
 	if (candidate.user === loggedUserID && candidate.socket === currTransmiterSocket){
 		console.log('CT:',candidate.candidate)
 		TempIceCandidates.push(candidate.candidate);	
 	}
+*/
+socket.on('candidate_transmision', function(candidate){
+	connections[candidate.id].addIceCandidate( new RTCIceCandidate(candidate.candidate),
+        function() {
+        }, function(err) {
+          console.error(err);
+        })
 	
 });
-
+socket.on('aaa', function(){
+	console.log('aaa');
+})
 socket.on('socket', function(msg){
   if (socketSwitch === true){
     ownSocket = msg;

@@ -9,14 +9,17 @@
         	<button id="initBtn" onclick="start()" type="button" class="btn btn-primary btn-lg">Start transmitting</button>
             <br>
             <br>
-            <video class="localVideo" id="localVideo" autoplay ></video>
+            <div class="videoElContainer">
+                <video class="video" id="localVideo" autoplay ></video>
+            </div>
+
+
         </div>
-        
+        <!--<h1 id="logger">asdsad</h1>-->
         <script src="/socket.io/socket.io.js"></script>
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/adapterjs/0.15.3/adapter.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/adapterjs/0.15.3/adapter.screenshare.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/adapterjs/0.15.3/adapter.screenshare.min.js"></script>
+        <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+
 
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 
