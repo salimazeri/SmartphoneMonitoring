@@ -4,8 +4,6 @@
 
 Web application is implemented using NodeJS with ExpressJS.
 
-To transmit the camera using a smartphone, use the firefox mobile browser.
-
 You also need an xampp packet:
 
 xampp version: XAMPP for Linux 7.3.0-0, 
