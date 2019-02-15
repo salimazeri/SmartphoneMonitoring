@@ -7,17 +7,16 @@ RTCPeerConnection = window.RTCPeerConnection ||
   window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
 RTCIceCandidate = window.RTCIceCandidate ||
   window.mozRTCIceCandidate;
-var ownSocket = null;
+var ownSocket  = null;
+var currRecieverSocket = null;
 var socketSwitch = true;
 var canConnect = true;
+var canSendOffer = true;
 var connection = {};
-var currRecieverSocket = null;
 var peerConnections = {};
-var track, sender;
-var dc = null;
 var isPageLoaded = false;
 var currentdate = new Date();
-var connectionNumber;
+//var connectionRandomID;
 var time = currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + currentdate.getSeconds();
 var video = document.getElementById('localVideo');
 var options_without_restart = {offerToReceiveAudio: false,
@@ -64,7 +63,7 @@ function getBrowserRTCConnectionObj () {
     }
   }
 
-function makeid() {
+function randomIDgenerator() {
   var text = "";
   var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$";
 
@@ -73,13 +72,7 @@ function makeid() {
 
   return text;
 }
-
-socket.on('load', function(){
-  isPageLoaded = true;
-})
-socket.on('unload', function(){
-  isPageLoaded = false;
-})
+var randomID = randomIDgenerator();
 
 function getPeerConnection(){
   var pc = getBrowserRTCConnectionObj();
@@ -89,14 +82,14 @@ function getPeerConnection(){
   pc.onicecandidate = async function(evt){
     try{
         if (await evt.candidate) {
-            socket.emit('candidate_transmision', {  "id": connectionNumber,
+            socket.emit('candidate_transmision', {  "id": randomID,
                                                     "candidate": await evt.candidate,
                                                     "user": loggedUserID,
-                                                    "socket": ownSocket,
-                                                    "toSocket": currRecieverSocket});
+                                                    "fromSocket": ownSocket});
+            console.log(loggedUserID,'(socket:',ownSocket, 'id:',randomID,'): , sending Ice Candidates');
         }
     } catch (err){
-      console.log(err)
+        console.log(loggedUserID,'(socket:',ownSocket, 'id:',randomID,'): , sending Ice Candidates error:',error);
     }
   }
   //var isNegotiating = false;
@@ -107,23 +100,32 @@ function getPeerConnection(){
       //}
       //isNegotiating = true;
       try{
-          await pc.createOffer(options_without_restart).then(onCreateOfferSuccess, onCreateOfferError)
+          sendOfferWrapper();
       } catch(e) {
           console.log(e);
       }
       
   }
 
+  function sendOfferWrapper(){
+    setTimeout(async function(){
+      if (canSendOffer === true){
+        await pc.createOffer(options_without_restart).then(onCreateOfferSuccess, onCreateOfferError);
+       
+      } else {
+        sendOfferWrapper();
+      }
+    },1000);
+  }
+
   async function onCreateOfferSuccess(sdp){
       //console.log(sdp);
       await pc.setLocalDescription(await new RTCSessionDescription(sdp));
-      console.log(connectionNumber);
-      connectionNumber = makeid();
-      socket.emit('ask', {"id": connectionNumber,
+      socket.emit('ask', {"id": randomID,
                           "sdp":JSON.stringify(pc.localDescription),
                           "user": loggedUserID,
                           "fromSocket": ownSocket});
-      console.log('offercreated');
+      console.log(loggedUserID,'(socket:',ownSocket,')',': send new ask with local session description');
   }
   function onCreateOfferError(error){
     console.log('onCreateOfferError:', error);
@@ -131,39 +133,46 @@ function getPeerConnection(){
 
   pc.oniceconnectionstatechange = function(event) {
       try{    
-          console.log(pc.iceConnectionState);
+          /*if (pc.iceConnectionState === 'checking'){
+              $('#initBtn').prop('disabled', true)
+          }
           if (pc.iceConnectionState === 'completed'){
               $('#initBtn').css('display', 'none');
+          }*/
+          if (pc.iceConnectionState === 'completed' || pc.iceConnectionState === 'connected'){
+              $('#initBtn').text("Connected")
+              $('#initBtn').prop('disabled', true); 
           }
           if (pc.iceConnectionState === 'failed'){
-              $('#initBtn').css('display', '');
+              $('#initBtn').text('Start transmitting');
               $('#initBtn').prop('disabled', false)
           } 
           if (pc.iceConnectionState === "disconnected"){
-            restartOnPageLoad();
+              $('#initBtn').text('Reconnecting');
+              $('#initBtn').prop('disabled', true)
+              iceRestartWrapper();
           }
       } catch(err) {
         console.log(err)
       }
   }
 
-  function restartOnPageLoad(){
+  function iceRestartWrapper(){
     setTimeout(function(){
       if (isPageLoaded){
         console.log('strona zostala zaladowana')
         setTimeout(function(){
           iceRestart();
-        })
+        },3000)
       } else {
         console.log('strona nie zostala zaladowana')
-        restartOnPageLoad()
+        iceRestartWrapper();
       }
     },3000);
   }
 
   async function iceRestart(event){  
       try{
-          socket.emit('aaa');
           await pc.createOffer(options_with_restart).then(onCreateOfferSuccess, onCreateOfferError);
       } catch(error) {
           console.log(error);
@@ -190,7 +199,6 @@ window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
 function start() {
     try {
 
-        $('#initBtn').prop('disabled', true);
         navigator.mediaDevices.getUserMedia = navigator.mediaDevices.getUserMedia ||
                                  navigator.mediaDevices.webkitGetUserMedia ||
                                  navigator.mediaDevices.mozGetUserMedia;
@@ -223,6 +231,7 @@ socket.on('candidate_reciever', function(candidate){
     if (candidate.user === loggedUserID && candidate.fromSocket === currRecieverSocket){
       pc.addIceCandidate( new RTCIceCandidate(candidate.candidate),
         function() {
+            console.log(loggedUserID,'(socket:',ownSocket,')',': new ice candidate, from socket:',candidate.fromSocket);
         }, function(err) {
           console.error(err);
         })
@@ -235,6 +244,8 @@ socket.on('response', function(remoteSDP){
         if (remoteSDP.user === loggedUserID){
             currRecieverSocket = remoteSDP.fromSocket;
             pc.setRemoteDescription(new RTCSessionDescription(remoteSDP.sdp));
+            console.log(loggedUserID,'(socket:',ownSocket, 'id:',randomID,'): , response with remote session description, form socket:',remoteSDP.fromSocket);
+            console.log('   ',remoteSDP.sdp);
         }
     } catch(err){
       console.log(err);
@@ -244,14 +255,22 @@ socket.on('response', function(remoteSDP){
 
 socket.on('busy', function(msg){
     if (msg.user === loggedUserID){
-      $('#initBtn').prop('disabled', true);
+        canSendOffer = false;
     }
 })
 
 socket.on('free', function(msg){
     if (msg.user === loggedUserID){
-      $('#initBtn').prop('disabled', false);
+        canSendOffer = true;
     }
+})
+
+socket.on('load', function(){
+  isPageLoaded = true;
+})
+
+socket.on('unload', function(){
+  isPageLoaded = false;
 })
 
 socket.on('socket', function(msg){
@@ -265,6 +284,8 @@ socket.on('socket', function(msg){
 
 //md5, zabezpieczenie
 //system logów
+//zmiana hasla, system email
+//ZROBIĆ USERA POBIERANEGO Z HANDELARA JAKO OSOBNY ELEMENT ZEBY MOŻNA BYLO CHWYCIĆ TYLKO GO
 //mdns
 //przycisk do zrobienia wszystkich zdjęć
 //obsługa zdarzenia usuniecia RTCPeerConnection + usuwanie go z listty peerConnections

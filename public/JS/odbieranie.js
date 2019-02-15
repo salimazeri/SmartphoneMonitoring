@@ -7,7 +7,8 @@ var TempDescriptions = {};
 var connection = {};
 var TempIceCandidates = [];
 var connections = [];
-var ownSocket, currTransmiterSocket = null;
+var ownSocket = null;
+var currTransmiterSocket = null;
 var socketSwitch = true;
 var isAttached = {"remoteVideo1": false,"remoteVideo2": false,"remoteVideo3": false,"remoteVideo4": false};
 
@@ -65,6 +66,7 @@ RTCIceCandidate = window.RTCIceCandidate ||
 btnCheck();
 
 function sendThatLoad(){
+	socket.emit('free', {'user': loggedUserID});
 	socket.emit('load');
 };
 
@@ -176,7 +178,6 @@ function getPeerConnection(){
 	};
 
 	pc.ontrack = async function(evt){
-		console.log('ontrack');
 		if (video1.srcObject === null){
 			video1.srcObject = await evt.streams[0];
 			var connectionId = getKeyByValue(peerConnections,pc);
@@ -208,10 +209,9 @@ function getPeerConnection(){
 		btnCheck();
 	};
 	pc.oniceconnectionstatechange = async function(evt){
-		try{	
+		try{
 			if (pc.iceConnectionState === 'connected'){
-				socket.emit('free', {"state": "free",
-									 "user": loggedUserID});
+				socket.emit('free', {'user': loggedUserID});
 			}
 			if (pc.iceConnectionState === "disconnected") { 
 				var connectionId = getKeyByValue(peerConnections,pc);
@@ -250,14 +250,16 @@ socket.on('ask', async offer => {
     	};
     	if (!connections[offer.id]) {
     		connections[offer.id] = getPeerConnection();
-    		console.log('ASK, połączenie utworzone');
+    		
       
     	};
 	    const connection = connections[offer.id];
+	    console.log(loggedUserID,'(socket:',ownSocket,')',': new offer with remote sesion description, from socket:',offer.fromSocket, ',remote connection id:',offer.id);
 	    currTransmiterSocket = offer.fromSocket;
 	    await connection.setRemoteDescription(JSON.parse(offer.sdp));
 	    await connection.setLocalDescription(await connection.createAnswer());
 	    await registerIceCandidate(connections[offer.id]);
+	    socket.emit('busy', {'user': loggedUserID});
 	    socket.emit('response', {'sdp': connection.localDescription,
 	                             'user': loggedUserID,
 	                             'fromSocket': ownSocket,
@@ -270,6 +272,8 @@ socket.on('ask', async offer => {
 socket.on('candidate_transmision', function(candidate){
 	connections[candidate.id].addIceCandidate( new RTCIceCandidate(candidate.candidate),
         function() {
+        	console.log(loggedUserID,'(socket:',ownSocket,')',': new ice candidate, from socket:',candidate.fromSocket, ',remote connection id:',candidate.id);
+        	console.log('		',candidate.candidate);
         }, function(err) {
           console.error(err);
         });
