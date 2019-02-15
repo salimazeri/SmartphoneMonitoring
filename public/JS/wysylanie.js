@@ -41,19 +41,17 @@ var ID = function () {
 };
 
 function getBrowserRTCConnectionObj () {
-var servers = {'iceServers': [
-    {'url':'stun:stun.ekiga.net'},
-    {'url':'stun:stun.fwdnet.net'},
-    {
-      url: 'turn:192.158.29.39:3478?transport=udp',
-      credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-      username: '28224511:1379330808'
-  },
-  {
-      url: 'turn:192.158.29.39:3478?transport=tcp',
-      credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-      username: '28224511:1379330808'
-}]};
+    var servers = {'iceServers': [
+        {'url':'stun:stun.ekiga.net'},
+        {'url':'stun:stun.fwdnet.net'},
+        {url: 'turn:192.158.29.39:3478?transport=udp',
+       credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+       username: '28224511:1379330808'
+      },
+      {url: 'turn:192.158.29.39:3478?transport=tcp',
+       credential: 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+       username: '28224511:1379330808'}]
+      };
 
     if (window.mozRTCPeerConnection) {
           return new mozRTCPeerConnection(servers);
@@ -65,8 +63,6 @@ var servers = {'iceServers': [
         return new RTCPeerConnection(servers);
     }
   }
-
-//setInterval(function(){console.log(canConnect)}, 100);
 
 function makeid() {
   var text = "";
@@ -249,21 +245,19 @@ socket.on('response', function(remoteSDP){
 socket.on('busy', function(msg){
     if (msg.user === loggedUserID){
       $('#initBtn').prop('disabled', true);
-      canConnect = false;
     }
 })
 
 socket.on('free', function(msg){
     if (msg.user === loggedUserID){
       $('#initBtn').prop('disabled', false);
-      canConnect = true;
     }
 })
 
 socket.on('socket', function(msg){
     if (socketSwitch === true){
       ownSocket = msg;
-      console.log(time, 'Socket sesji: ',ownSocket);
+      console.log(time, 'Socket sesji:',ownSocket);
       socketSwitch = false;  
     }
   

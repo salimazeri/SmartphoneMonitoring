@@ -104,7 +104,6 @@ io.sockets.on('connection', function(socket){
 		socket.to(message.toSocket).emit('response', message);
 		console.log('------------ RESPONSE ------------')
 	});
-
 	socket.on('busy', function(message){
 		socket.broadcast.emit('busy', message);
 	});
@@ -117,10 +116,6 @@ io.sockets.on('connection', function(socket){
 	socket.on('unload', function(){
 		socket.broadcast.emit('unload');
 	})
-	socket.on('aaa', function(){
-		socket.broadcast.emit('aaa');
-	})
-
 });
 
 // ZROBIĆ TO SAMO CO PRZY RESTARCIE ICE Z CANRESTART TYLKO PRZY NORMALNYM ŁĄCZENIU KILKU KAMER
