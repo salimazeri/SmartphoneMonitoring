@@ -67,11 +67,11 @@ btnCheck();
 
 function sendThatLoad(){
 	socket.emit('free', {'user': loggedUserID});
-	socket.emit('load');
+	socket.emit('load', {'user': loggedUserID});
 };
 
 function sendThatUnload(){
-	socket.emit('unload');
+	socket.emit('unload', {'user': loggedUserID});
 };
 
 function getKeyByValue(object, value) {
@@ -171,7 +171,9 @@ function getPeerConnection(){
 			socket.emit('candidate_reciever', { "candidate": await evt.candidate,
 												"user": loggedUserID,
 												"fromSocket": ownSocket,
-												"toSocket": currTransmiterSocket });	
+												"toSocket": currTransmiterSocket });
+			console.log(loggedUserID,'(socket:',ownSocket,') : , sending Ice Candidates');
+            console.log('   ', evt.candidate);	
 		};
 	},function(error){
 			console.log(error);
@@ -250,8 +252,6 @@ socket.on('ask', async offer => {
     	};
     	if (!connections[offer.id]) {
     		connections[offer.id] = getPeerConnection();
-    		
-      
     	};
 	    const connection = connections[offer.id];
 	    console.log(loggedUserID,'(socket:',ownSocket,')',': new offer with remote sesion description, from socket:',offer.fromSocket, ',remote connection id:',offer.id);
@@ -270,9 +270,12 @@ socket.on('ask', async offer => {
 });
 
 socket.on('candidate_transmision', function(candidate){
+	if (candidate.user != loggedUserID){
+		return;
+	}
 	connections[candidate.id].addIceCandidate( new RTCIceCandidate(candidate.candidate),
         function() {
-        	console.log(loggedUserID,'(socket:',ownSocket,')',': new ice candidate, from socket:',candidate.fromSocket, ',remote connection id:',candidate.id);
+        	console.log(loggedUserID,'(socket:',ownSocket,')',': new ice candidate registered, from socket:',candidate.fromSocket, ',remote connection id:',candidate.id);
         	console.log('		',candidate.candidate);
         }, function(err) {
           console.error(err);

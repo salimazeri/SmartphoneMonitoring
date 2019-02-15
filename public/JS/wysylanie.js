@@ -83,10 +83,11 @@ function getPeerConnection(){
     try{
         if (await evt.candidate) {
             socket.emit('candidate_transmision', {  "id": randomID,
-                                                    "candidate": await evt.candidate,
+                                                    "candidate": evt.candidate,
                                                     "user": loggedUserID,
                                                     "fromSocket": ownSocket});
             console.log(loggedUserID,'(socket:',ownSocket, 'id:',randomID,'): , sending Ice Candidates');
+            console.log('   ', evt.candidate);
         }
     } catch (err){
         console.log(loggedUserID,'(socket:',ownSocket, 'id:',randomID,'): , sending Ice Candidates error:',error);
@@ -125,7 +126,7 @@ function getPeerConnection(){
                           "sdp":JSON.stringify(pc.localDescription),
                           "user": loggedUserID,
                           "fromSocket": ownSocket});
-      console.log(loggedUserID,'(socket:',ownSocket,')',': send new ask with local session description');
+      console.log(loggedUserID,'(socket:',ownSocket,'id: ',randomID,')',': send new ask with local session description');
   }
   function onCreateOfferError(error){
     console.log('onCreateOfferError:', error);
@@ -231,7 +232,8 @@ socket.on('candidate_reciever', function(candidate){
     if (candidate.user === loggedUserID && candidate.fromSocket === currRecieverSocket){
       pc.addIceCandidate( new RTCIceCandidate(candidate.candidate),
         function() {
-            console.log(loggedUserID,'(socket:',ownSocket,')',': new ice candidate, from socket:',candidate.fromSocket);
+            console.log(loggedUserID,'(socket:',ownSocket,')',': new ice candidate registered, from socket:',candidate.fromSocket);
+            console.log('   ', candidate.candidate);
         }, function(err) {
           console.error(err);
         })
@@ -249,44 +251,53 @@ socket.on('response', function(remoteSDP){
         }
     } catch(err){
       console.log(err);
-    }
+    };
 
-})
+});
 
-socket.on('busy', function(msg){
-    if (msg.user === loggedUserID){
+socket.on('busy', function(message){
+    if (message.user === loggedUserID){
         canSendOffer = false;
-    }
-})
+    };
+});
 
-socket.on('free', function(msg){
-    if (msg.user === loggedUserID){
+socket.on('free', function(message){
+    if (message.user === loggedUserID){
         canSendOffer = true;
-    }
-})
+    };
+});
 
-socket.on('load', function(){
-  isPageLoaded = true;
-})
+socket.on('load', function(message){
+    if (message.user === loggedUserID){
+        isPageLoaded = true;
+    };
+});
 
-socket.on('unload', function(){
-  isPageLoaded = false;
-})
+socket.on('unload', function(message){
+    if (message.user === loggedUserID){
+        isPageLoaded = false;
+    };
+});
 
 socket.on('socket', function(msg){
     if (socketSwitch === true){
-      ownSocket = msg;
-      console.log(time, 'Socket sesji:',ownSocket);
-      socketSwitch = false;  
-    }
-  
-})
+        ownSocket = msg;
+        console.log(time, 'Socket sesji:',ownSocket);
+        socketSwitch = false;  
+    };
+});
 
 //md5, zabezpieczenie
-//system logów
-//zmiana hasla, system email
-//ZROBIĆ USERA POBIERANEGO Z HANDELARA JAKO OSOBNY ELEMENT ZEBY MOŻNA BYLO CHWYCIĆ TYLKO GO
+
+//system logów => zalogowanie, wylogowanie, rejestracja, zmiana hasla, usuniecie konta,
+//wlaczenie facedetection, wylaczenie face detection, zrobienie zdjecia(z nazwa wideo), 
+//zrobienie zdjecia wszystkich kamer, nowa oferta, wysylanie ice, rejestacja ice => wszystko z czasem, datą, nazwą użytkownika 
+
+//zmiana hasla, system email, usuniecie konta
+
 //mdns
+
 //przycisk do zrobienia wszystkich zdjęć
+
 //obsługa zdarzenia usuniecia RTCPeerConnection + usuwanie go z listty peerConnections
  

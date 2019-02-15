@@ -110,11 +110,11 @@ io.sockets.on('connection', function(socket){
 	socket.on('free', function(message){
 		socket.broadcast.emit('free', message);
 	});
-	socket.on('load', function(){
-		socket.broadcast.emit('load');
+	socket.on('load', function(message){
+		socket.broadcast.emit('load', message);
 	})
-	socket.on('unload', function(){
-		socket.broadcast.emit('unload');
+	socket.on('unload', function(message){
+		socket.broadcast.emit('unload',message);
 	})
 });
 
