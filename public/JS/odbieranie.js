@@ -368,15 +368,19 @@ function startFaceDetect(){
 		if(stopInterval === false){
 			if (isAttached["remoteVideo1"] === true){
 					faceDetect("remoteVideo1");
+					console.log(1);
 			};
 			if (isAttached["remoteVideo2"] === true){
 				faceDetect("remoteVideo2");
+				console.log(2);
 			};
 			if (isAttached["remoteVideo3"] === true){
 				faceDetect("remoteVideo3");
+				console.log(3);
 			};
 			if (isAttached["remoteVideo4"] === true){
 				faceDetect("remoteVideo4");
+				console.log(4);
 			};
 		};	
 	}, 500);

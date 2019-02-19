@@ -1,12 +1,12 @@
 //"use strict";
-
+var mysql = require('mysql');
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    port: databasePort,
+    database: dataBaseName
+});
 var socket = io.connect();
-RTCSessionDescription = window.RTCSessionDescription ||
-  window.mozRTCSessionDescription;
-RTCPeerConnection = window.RTCPeerConnection ||
-  window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
-RTCIceCandidate = window.RTCIceCandidate ||
-  window.mozRTCIceCandidate;
 var ownSocket  = null;
 var currRecieverSocket = null;
 var socketSwitch = true;
@@ -16,17 +16,14 @@ var connection = {};
 var peerConnections = {};
 var isPageLoaded = false;
 var currentdate = new Date();
-//var connectionRandomID;
 var time = currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + currentdate.getSeconds();
 var video = document.getElementById('localVideo');
 var options_without_restart = {offerToReceiveAudio: false,
                                offerToReceiveVideo: true,
                                iceRestart: false};
-
 var options_with_restart = {offerToReceiveAudio: false,
                             offerToReceiveVideo: true,
                             iceRestart: true};
-
 var constraints = {
                     audio: false,
                     video: true
@@ -38,6 +35,33 @@ var ID = function () {
     id++;
     return id;
 };
+RTCSessionDescription = window.RTCSessionDescription ||
+  window.mozRTCSessionDescription;
+RTCPeerConnection = window.RTCPeerConnection ||
+  window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+RTCIceCandidate = window.RTCIceCandidate ||
+  window.mozRTCIceCandidate;
+window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
+
+function logToDatabase(login, event){
+    let sql = "INSERT INTO Logs(login, event, date, time) VALUES(\""+login+"\", \""+event+"\",\""+getDate()+"\", \""+getTime()+"\")";
+    let query = db.query(sql, (err, result) =>{
+        if(err){
+            throw err;
+        };
+    });
+};
+
+function randomIDgenerator() {
+  var text = "";
+  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$";
+
+  for (var i = 0; i < 10; i++)
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+  return text;
+};
+var randomID = randomIDgenerator();
 
 function getBrowserRTCConnectionObj () {
     var servers = {'iceServers': [
@@ -61,18 +85,7 @@ function getBrowserRTCConnectionObj () {
     } else {
         return new RTCPeerConnection(servers);
     }
-  }
-
-function randomIDgenerator() {
-  var text = "";
-  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$";
-
-  for (var i = 0; i < 10; i++)
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-  return text;
-}
-var randomID = randomIDgenerator();
+  };
 
 function getPeerConnection(){
   var pc = getBrowserRTCConnectionObj();
@@ -91,119 +104,90 @@ function getPeerConnection(){
         }
     } catch (err){
         console.log(loggedUserID,'(socket:',ownSocket, 'id:',randomID,'): , sending Ice Candidates error:',error);
-    }
-  }
-  //var isNegotiating = false;
+    };
+  };
+
   pc.onnegotiationneeded = async e => {
-      //if (isNegotiating){
-      //  console.log('skipping negotiation')
-      //  return;
-      //}
-      //isNegotiating = true;
       try{
           sendOfferWrapper();
       } catch(e) {
           console.log(e);
-      }
-      
-  }
+      }; 
+  };
 
   function sendOfferWrapper(){
-    setTimeout(async function(){
-      if (canSendOffer === true){
-        await pc.createOffer(options_without_restart).then(onCreateOfferSuccess, onCreateOfferError);
-       
-      } else {
-        sendOfferWrapper();
-      }
-    },1000);
-  }
+      setTimeout(async function(){
+        if (canSendOffer === true){
+          await pc.createOffer(options_without_restart).then(onCreateOfferSuccess, onCreateOfferError);
+        } else {
+          sendOfferWrapper();
+        }
+      },1000);
+  };
 
   async function onCreateOfferSuccess(sdp){
-      //console.log(sdp);
       await pc.setLocalDescription(await new RTCSessionDescription(sdp));
       socket.emit('ask', {"id": randomID,
                           "sdp":JSON.stringify(pc.localDescription),
                           "user": loggedUserID,
                           "fromSocket": ownSocket});
+      logToDatabase(loggedUserID, "Offer created succesfully");
       console.log(loggedUserID,'(socket:',ownSocket,'id: ',randomID,')',': send new ask with local session description');
-  }
+  };
+
   function onCreateOfferError(error){
-    console.log('onCreateOfferError:', error);
-  }
+      console.log('onCreateOfferError:', error);
+  };
 
   pc.oniceconnectionstatechange = function(event) {
       try{    
-          /*if (pc.iceConnectionState === 'checking'){
-              $('#initBtn').prop('disabled', true)
-          }
-          if (pc.iceConnectionState === 'completed'){
-              $('#initBtn').css('display', 'none');
-          }*/
           if (pc.iceConnectionState === 'completed' || pc.iceConnectionState === 'connected'){
-              $('#initBtn').text("Connected")
+              $('#initBtn').text("Connected");
               $('#initBtn').prop('disabled', true); 
-          }
+          };
           if (pc.iceConnectionState === 'failed'){
               $('#initBtn').text('Start transmitting');
-              $('#initBtn').prop('disabled', false)
-          } 
+              $('#initBtn').prop('disabled', false);
+          }; 
           if (pc.iceConnectionState === "disconnected"){
               $('#initBtn').text('Reconnecting');
-              $('#initBtn').prop('disabled', true)
+              $('#initBtn').prop('disabled', true);
               iceRestartWrapper();
-          }
+          };
       } catch(err) {
-        console.log(err)
-      }
-  }
+        console.log(err);
+      };
+  };
 
   function iceRestartWrapper(){
-    setTimeout(function(){
-      if (isPageLoaded){
-        console.log('strona zostala zaladowana')
-        setTimeout(function(){
-          iceRestart();
-        },3000)
-      } else {
-        console.log('strona nie zostala zaladowana')
-        iceRestartWrapper();
-      }
-    },3000);
-  }
+      setTimeout(function(){
+        if (isPageLoaded){
+          console.log('strona zostala zaladowana')
+          setTimeout(function(){
+            iceRestart();
+          },3000);
+        } else {
+          console.log('strona nie zostala zaladowana')
+          iceRestartWrapper();
+        }
+      },3000);
+  };
 
   async function iceRestart(event){  
       try{
           await pc.createOffer(options_with_restart).then(onCreateOfferSuccess, onCreateOfferError);
       } catch(error) {
           console.log(error);
-      } 
-  }
+      }; 
+  };
   return pc;
-}
-/*
-setInterval(function(){showlog()},100);
-function showlog() {
-    var old = console.log;
-    var logger = document.getElementById('logger');
-    console.log = function (message) {
-        if (typeof message == 'object') {
-            logger.innerHTML += (JSON && JSON.stringify ? JSON.stringify(message) : message) + '<br />';
-        } else {
-            logger.innerHTML += message + '<br />';
-        }
-    }
 };
-*/
-window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
 
 function start() {
     try {
-
         navigator.mediaDevices.getUserMedia = navigator.mediaDevices.getUserMedia ||
                                  navigator.mediaDevices.webkitGetUserMedia ||
                                  navigator.mediaDevices.mozGetUserMedia;
-
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
             const stream =
                 navigator.mediaDevices.getUserMedia(constraints)
@@ -212,7 +196,7 @@ function start() {
                       video.mozSrcObject = stream;
                   } else {
                       video.srcObject = stream;
-                  }
+                  };
                   var str = stream;
                   pc = getPeerConnection();
                   pc.addTrack(stream.getVideoTracks()[0], stream);
@@ -220,13 +204,13 @@ function start() {
                 })
                 .catch(function(err){
                   console.log("getUserMedia error:",err);
-                })
+                });
         }
 
     } catch (err) {
         console.error(err);
-    }
-}
+    };
+};
       
 socket.on('candidate_reciever', function(candidate){
     if (candidate.user === loggedUserID && candidate.fromSocket === currRecieverSocket){
@@ -236,9 +220,8 @@ socket.on('candidate_reciever', function(candidate){
             console.log('   ', candidate.candidate);
         }, function(err) {
           console.error(err);
-        })
-  }
-  
+        });
+    }; 
 });
 
 socket.on('response', function(remoteSDP){
@@ -248,11 +231,10 @@ socket.on('response', function(remoteSDP){
             pc.setRemoteDescription(new RTCSessionDescription(remoteSDP.sdp));
             console.log(loggedUserID,'(socket:',ownSocket, 'id:',randomID,'): , response with remote session description, form socket:',remoteSDP.fromSocket);
             console.log('   ',remoteSDP.sdp);
-        }
+        };
     } catch(err){
       console.log(err);
     };
-
 });
 
 socket.on('busy', function(message){

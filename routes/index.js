@@ -7,6 +7,33 @@ var databasePort = 3306;
 var dataBaseName = 'BazaDanych';
 var userTableName = 'Users';
 
+function getTime(){
+	var currentdate = new Date();
+	var ss = currentdate.getSeconds();
+	if (ss < 10){
+		ss = '0' + ss;
+	};
+	var time = currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + ss;
+	return time;
+};
+
+function getDate(){
+	var currentdate = new Date();
+	var dd = currentdate.getDate();
+	var mm = currentdate.getMonth() +1;
+	var yyyy = currentdate.getFullYear();
+	if (dd < 10){
+		dd = '0' + dd;
+	};
+	if (mm < 10){
+		mm = '0' + mm;
+	};
+	var date = dd+'.'+
+					mm+'.'+
+					yyyy;
+	return date;
+};
+
 const db = mysql.createConnection({
 	host: 'localhost',
 	user: 'root',
@@ -22,6 +49,7 @@ const db_init = mysql.createConnection({
 
 createDataBase();
 createUserTable();
+createLogTable();
 setTimeout(function(){connectToDB()},1000);
 
 function connectToDB(){
@@ -33,14 +61,14 @@ function connectToDB(){
 		}
 
 	});
-}
+};
 		
 function createDataBase(){
 	var sql = "CREATE DATABASE IF NOT EXISTS BazaDanych";
 	db_init.query(sql, function (err, result) {
     	if (err) throw err;
   	});
-}
+};
 
 function createUserTable(){
 	var sql = "USE BazaDanych";
@@ -51,7 +79,27 @@ function createUserTable(){
 	db_init.query(sql, function (err, result) {
     	if (err) throw err;
   	});
-}
+};
+
+function createLogTable(){
+	var sql = "USE BazaDanych";
+	db_init.query(sql, function (err, result) {
+    	if (err) throw err;
+  	});
+	var sql = "CREATE TABLE IF NOT EXISTS Logs (id INT(11) NOT NULL AUTO_INCREMENT, login VARCHAR(255) NOT NULL, event VARCHAR(255) NOT NULL, date VARCHAR(255) NOT NULL, time VARCHAR(255) NOT NULL, PRIMARY KEY (id))";
+	db_init.query(sql, function (err, result) {
+    	if (err) throw err;
+  	});
+};
+
+function logToDatabase(login, event){
+	let sql = "INSERT INTO Logs(login, event, date, time) VALUES(\""+login+"\", \""+event+"\",\""+getDate()+"\", \""+getTime()+"\")";
+	let query = db.query(sql, (err, result) =>{
+		if(err){
+			throw err;
+		};
+	});
+};
 
 var bcrypt = require('bcrypt');
 const saltRounds = 10;
@@ -91,6 +139,7 @@ router.get('/', sessionChecker, (req, res) => {
 
 router.get('/wylogowanie', (req, res) => {
     if(req.session){
+    	logToDatabase(req.session.user, 'Logout successfuly');
     	res.clearCookie('user_sid');
     	req.session.destroy(function(){});
     }
@@ -129,6 +178,7 @@ router.route('/rejestracja')
 				if (result.length){
 					//Użytkownik o podanym loginie już istnieje
 					let error = 'User with the given login already exists.'
+					logToDatabase(login, 'Registration unsuccessfuly');
 					res.render('rejestracja', {
 						title: 'Sign up error',
 						error: error
@@ -140,9 +190,10 @@ router.route('/rejestracja')
 						let query = db.query(sql, (err, result) => {
 							if(err){
 								throw err;
-							}
+							};
+							logToDatabase(login, 'Registration successfuly');
 							//session user = login
-							req.session.user = login;
+							//req.session.user = login;
 							let info = 'Registration was successful';
 							res.render('logowanie', {
 								title: 'Sign in',
@@ -180,19 +231,22 @@ router.route('/logowanie')
 				}
 				if (!result.length){
 					let error = 'Uźytkownik nie istnieje'
-						res.render('logowanie', {
-							title: 'Sign in error',
-							error: error
-						})
+					logToDatabase(login, "Login unsuccessfuly- User doesn't exist");
+					res.render('logowanie', {
+						title: 'Sign in error',
+						error: error
+					})
 				} else {
 					let hash = result[0].password;
 					bcrypt.compare(password, hash, function(err,result){
 						if (result === true){
 							req.session.user = login;
+							logToDatabase(login, "Login successfuly");
 							res.redirect('/');
 
 						} else {
 							let error = 'Incorrect data'
+							logToDatabase(login, "Login unsuccessfuly- Incorrect data");
 							res.render('logowanie', {
 								title: 'Sign in error',
 								error: error
