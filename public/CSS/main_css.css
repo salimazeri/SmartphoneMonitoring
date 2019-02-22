@@ -24,6 +24,10 @@ body {
 	display: inline-block;
 }
 
+.logs {
+  background-color: rgb(211,211,211);
+}
+
 input {
 	width: 200px;
 	height: 50px;
@@ -56,6 +60,19 @@ h1 {
 
 .p {
   color: white;
+}
+
+.logParagraph{
+  color: white;
+  display: inline-block;
+  background-color: rgb(105,105,105);
+  background-origin: content-box;
+  height: 20px;
+}
+
+.userDiv{
+  background-color: gray;
+  background-origin: content-box;
 }
 
 .video {

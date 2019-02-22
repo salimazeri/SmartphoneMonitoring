@@ -1,11 +1,11 @@
 //"use strict";
-var mysql = require('mysql');
+/*var mysql = require('mysql');
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     port: databasePort,
     database: dataBaseName
-});
+});*/
 var socket = io.connect();
 var ownSocket  = null;
 var currRecieverSocket = null;
@@ -42,15 +42,6 @@ RTCPeerConnection = window.RTCPeerConnection ||
 RTCIceCandidate = window.RTCIceCandidate ||
   window.mozRTCIceCandidate;
 window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
-
-function logToDatabase(login, event){
-    let sql = "INSERT INTO Logs(login, event, date, time) VALUES(\""+login+"\", \""+event+"\",\""+getDate()+"\", \""+getTime()+"\")";
-    let query = db.query(sql, (err, result) =>{
-        if(err){
-            throw err;
-        };
-    });
-};
 
 function randomIDgenerator() {
   var text = "";
@@ -91,7 +82,7 @@ function getPeerConnection(){
   var pc = getBrowserRTCConnectionObj();
   id = ID();
   peerConnections[id] = pc;
-
+  
   pc.onicecandidate = async function(evt){
     try{
         if (await evt.candidate) {
@@ -131,7 +122,7 @@ function getPeerConnection(){
                           "sdp":JSON.stringify(pc.localDescription),
                           "user": loggedUserID,
                           "fromSocket": ownSocket});
-      logToDatabase(loggedUserID, "Offer created succesfully");
+      socket.emit('offerLog', {'user': loggedUserID});
       console.log(loggedUserID,'(socket:',ownSocket,'id: ',randomID,')',': send new ask with local session description');
   };
 
@@ -270,16 +261,6 @@ socket.on('socket', function(msg){
 });
 
 //md5, zabezpieczenie
-
-//system logów => zalogowanie, wylogowanie, rejestracja, zmiana hasla, usuniecie konta,
-//wlaczenie facedetection, wylaczenie face detection, zrobienie zdjecia(z nazwa wideo), 
-//zrobienie zdjecia wszystkich kamer, nowa oferta, wysylanie ice, rejestacja ice => wszystko z czasem, datą, nazwą użytkownika 
-
 //zmiana hasla, system email, usuniecie konta
-
 //mdns
-
-//przycisk do zrobienia wszystkich zdjęć
-
-//obsługa zdarzenia usuniecia RTCPeerConnection + usuwanie go z listty peerConnections
  

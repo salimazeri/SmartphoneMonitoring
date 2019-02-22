@@ -6,9 +6,49 @@ var hbs = require('hbs'); //handlebars
 var session = require('express-session');
 var cookieParser = require('cookie-parser');
 var fs = require('fs');
-var routes = require('./routes/index');
+var routes = require('./routes/router');
 var https = require('https');
 var path = require('path');
+var mysql = require('mysql');
+var dns = require('dns');
+ 
+dns.resolve4('www.google.com', function (err, addresses) {
+  	if (err) throw err;
+ 
+  	console.log('addresses: ' + JSON.stringify(addresses));
+ 
+  	addresses.forEach(function (a) {
+    	dns.reverse(a, function (err, domains) {
+      		if (err) {
+        		console.log('reverse for ' + a + ' failed: ' + err.message);
+      		} else {
+        		console.log('reverse for ' + a + ': ' + JSON.stringify(domains));
+      		}
+    	});
+  	});
+});
+
+var databasePort = 3306;
+var dataBaseName = 'BazaDanych';
+const db = mysql.createConnection({
+	host: 'localhost',
+	user: 'root',
+	port: databasePort,
+	database: dataBaseName
+});
+
+setTimeout(function(){connectToDB()},1000);
+
+function connectToDB(){
+	db.connect((err) =>{
+		if(err){
+			console.log(err);
+		} else {
+			console.log('Połączono z bazą danych na porcie: ' + databasePort)		
+		}
+
+	});
+};
 
 var app = express();
 
@@ -23,7 +63,8 @@ app.set('views', (__dirname, 'views'));
 app.set('view engine', '.hbs');
 
 hbs.registerHelper('json', function(obj){
-	return new hbs.SafeString(JSON.stringify(obj));
+	objString = JSON.stringify(obj);
+	return JSON.parse(objString);
 })
 
 //Partials 
@@ -71,6 +112,41 @@ app.use(session({
 
 app.use('/', routes);
 
+function getTime(){
+	var currentdate = new Date();
+	var ss = currentdate.getSeconds();
+	if (ss < 10){
+		ss = '0' + ss;
+	};
+	var time = currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + ss;
+	return time;
+};
+
+function getDate(){
+	var currentdate = new Date();
+	var dd = currentdate.getDate();
+	var mm = currentdate.getMonth() +1;
+	var yyyy = currentdate.getFullYear();
+	if (dd < 10){
+		dd = '0' + dd;
+	};
+	if (mm < 10){
+		mm = '0' + mm;
+	};
+	var date = dd+'.'+
+					mm+'.'+
+					yyyy;
+	return date;
+};
+
+function logToDatabase(login, event){
+	let sql = "INSERT INTO Logs(login, event, date, time) VALUES(\""+login+"\", \""+event+"\",\""+getDate()+"\", \""+getTime()+"\")";
+	let query = db.query(sql, (err, result) =>{
+		if(err){
+			throw err;
+		};
+	});
+};
 
 //------------------------------------------------------------------------------------------------------------
 
@@ -107,10 +183,25 @@ io.sockets.on('connection', function(socket){
 	});
 	socket.on('load', function(message){
 		socket.broadcast.emit('load', message);
-	})
+	});
 	socket.on('unload', function(message){
 		socket.broadcast.emit('unload',message);
-	})
+	});
+	socket.on('offerLog', function(message){
+		logToDatabase(message.user, 'Sent offer');
+	});
+	socket.on('answerLog', function(message){
+		logToDatabase(message.user, 'Sent answer');
+	});
+	socket.on('photoLog', function(message){
+		logToDatabase(message.user, 'Photo taken');
+	});
+	socket.on('fdStartLog', function(message){
+		logToDatabase(message.user, 'Face Detecting started');
+	});
+	socket.on('fdStopLog', function(message){
+		logToDatabase(message.user, 'Face Detecting stopped');
+	});
 });
 
 // ZROBIĆ TO SAMO CO PRZY RESTARCIE ICE Z CANRESTART TYLKO PRZY NORMALNYM ŁĄCZENIU KILKU KAMER

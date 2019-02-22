@@ -166,6 +166,7 @@ function getPeerConnection(){
 	var pc = getBrowserRTCConnectionObj();
 	id = ID();
 	peerConnections[id] = pc;
+	
 	pc.onicecandidate = async function(evt){
 		if (await evt.candidate) {
 			socket.emit('candidate_reciever', { "candidate": await evt.candidate,
@@ -258,6 +259,8 @@ socket.on('ask', async offer => {
 	    currTransmiterSocket = offer.fromSocket;
 	    await connection.setRemoteDescription(JSON.parse(offer.sdp));
 	    await connection.setLocalDescription(await connection.createAnswer());
+	    socket.emit('answerLog', {'user': loggedUserID});
+
 	    await registerIceCandidate(connections[offer.id]);
 	    socket.emit('busy', {'user': loggedUserID});
 	    socket.emit('response', {'sdp': connection.localDescription,
@@ -341,6 +344,7 @@ function snapShot(video){
 		alert(video.id+' is not attached.');
 		return;
 	}
+	socket.emit('photoLog', {'user': loggedUserID});
 	ctx.fillRect(0,0,w,h);
 	ctx.drawImage(video,0,0,w,h);
 	var dataURI = canvas.toDataURL('image/jpeg');
@@ -382,7 +386,8 @@ function startFaceDetect(){
 				faceDetect("remoteVideo4");
 				console.log(4);
 			};
-		};	
+		};
+	socket.emit('fdStartLog', {'user': loggedUserID});	
 	}, 500);
 	console.log('Face detection started');
 };
@@ -392,6 +397,8 @@ function stopFaceDetect(){
 	stopInterval = true;
 	$('.face').remove();
 	console.log('Face detection stoped');
+	socket.emit('fdStopLog', {'user': loggedUserID});	
+
 };
 
 function faceDetect(video){
