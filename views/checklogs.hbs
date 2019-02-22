@@ -1,28 +1,4 @@
-<!doctype html>
-<html>
-    <head id="main-header">
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
-        <link rel="stylesheet" type="text/css" href="/CSS/main_css.css">
-        <meta charset="utf-8">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-            <a class="navbar-brand" href="/">SmartphoneMonitoring</a>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/checklogs">Check logs</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/manageusers">Manage users</a>
-                    </li>
-                </ul>
-          </div>
-          <a style="color: white">Logged as:</a>&nbsp;&nbsp;<a style="color: white;" id="user">{{user}}</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-          <button onclick="window.location.href='/wylogowanie'" type="button" class="btn btn-primary btn">Log out</button>
-        </nav>
-
-        
-        
-    </head>
+{{> admin_header}}
     
     <body>
         <br>

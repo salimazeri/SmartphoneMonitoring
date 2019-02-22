@@ -3,6 +3,8 @@ var router = express.Router();
 var mysql = require('mysql');
 var path = require('path');
 var nodemailer = require('nodemailer');
+var bcrypt = require('bcrypt');
+const saltRounds = 10;
 
 let transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
@@ -19,7 +21,8 @@ var databasePort = 3306;
 var dataBaseName = 'BazaDanych';
 var userTableName = 'Users';
 
-function sendMail(to_, subject_, text_){
+function sendMail(to_, subject_, text_, callback){
+	let isSend = null;
 	var mailOptions = {
 	  from: '19salimazeri96@gmail.com',
 	  to: to_,
@@ -30,8 +33,10 @@ function sendMail(to_, subject_, text_){
 	transporter.sendMail(mailOptions, function(error, info){
 	  if (error) {
 	    console.log(error);
+	    callback(false);
 	  } else {
 	    console.log('Email sent: ' + info.response);
+	    callback(true);
 	  }
 	});
 }
@@ -39,10 +44,14 @@ function sendMail(to_, subject_, text_){
 function getTime(){
 	var currentdate = new Date();
 	var ss = currentdate.getSeconds();
+	var mm = currentdate.getMinutes();
 	if (ss < 10){
 		ss = '0' + ss;
 	};
-	var time = currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + ss;
+	if (mm < 10){
+		mm = '0' + mm;
+	}
+	var time = currentdate.getHours() + ":" + mm + ":" + ss;
 	return time;
 };
 
@@ -130,8 +139,7 @@ function logToDatabase(login, event){
 	});
 };
 
-var bcrypt = require('bcrypt');
-const saltRounds = 10;
+
 
 // This middleware will check if user's cookie is still saved in browser and user is not set, then automatically log the user out.
 // This usually happens when you stop your express server after login, your cookie still remains saved in the browser.
@@ -302,6 +310,105 @@ router.get('/odbieranie', function(req, res){
     }
 });
 
+router.route('/manageprofile')
+	.get( (req,res) =>{
+		if (req.session.user && req.cookies.user_sid) {
+			res.render('manageprofile', {user: req.session.user});
+		} else {
+			res.redirect('/')
+		}	
+	})
+
+router.route('/deleteprofile')
+	.get( (req, res) =>{
+		if (req.session.user && req.cookies.user_sid) {
+			res.render('deleteprofile', {user: req.session.user});
+		} else {
+			res.redirect('/')
+		}	
+	})
+	.post( (req,res) =>{
+		let canDelete = req.body.canDelete;
+		if (canDelete === 'yes'){
+			db.query('DELETE from Users WHERE login = \"'+req.session.user+'\"', function(err, result){
+				if(err){
+					console.log('error', err);
+				} else {
+					res.render('deleteprofile', {user: req.session.user,
+    							 	          info: 'Profile has been deleted, you have been logged out'});
+					delete req.session.user;
+					delete req.cookies.user_sid;
+				}
+			})
+		} else {
+			res.render('deleteprofile', {user: req.session.user,
+    							 	  info: 'Profile has not been deleted'});	
+		}
+		
+	});
+
+
+router.route('/changepassword')
+	.get( (req,res) =>{
+		if (req.session.user && req.cookies.user_sid) {
+			res.render('changepassword', {user: req.session.user});
+		} else {
+			res.redirect('/')
+		}	
+	})
+	.post( (req, res) =>{
+		const old_password = req.body.old_password;
+		const new_password = req.body.new_password;
+		req.checkBody('old_password', 'Old password can\'t be empty').notEmpty();
+		req.checkBody('new_password', 'New password can\'t be empty').notEmpty();
+		req.checkBody('new_password', 'New password should contain between 8 and 50 characters').len(8,50);
+		req.checkBody('new_password_retype', 'Repeat new password').notEmpty();
+		req.checkBody('new_password_retype', 'Passwords do not match').equals(req.body.new_password);
+
+		const password_change_errors = req.validationErrors();
+		//błąd przy wpisywaniu danych do rejestracji
+		if (password_change_errors) {
+			//Wyświetlanie błędów na stronie rejestracji 
+			res.render('changepassword', {user: req.session.user,
+										  errors: password_change_errors});
+		} else {
+			let login_sql = "SELECT password FROM Users WHERE login = \""+req.session.user+"\"";
+			console.log(login_sql);
+			let login_query = db.query(login_sql,(err, result) => {
+				if(err){
+					throw err;
+				}
+				let hash = result[0].password;
+				bcrypt.compare(old_password, hash, function(err,result){
+					
+					if (result === true){
+						bcrypt.hash(new_password, saltRounds, function(err, hash) {
+							console.log(new_password, hash);
+							let sql = 'UPDATE Users SET password = \"'+hash+'\" WHERE login = \"'+req.session.user+'\"';
+							let query = db.query(sql, (err, result) => {
+								if(err){
+									throw err;
+								};
+								res.render('changepassword', {user: req.session.user,
+													          info: 'Password has been changed successfully, you have been logged out'});
+								logToDatabase(req.session.user, 'Password changed');
+								delete req.session.user;
+								delete req.cookies.user_sid;
+								
+							})
+						});
+
+					} else {
+						console.log('hereeeeeee');
+						res.render('changepassword', {user: req.session.user,
+													  error: 'Old password you provided is incorrect'});
+					}
+				})					
+			})		
+		}
+	});
+	
+
 router.get('/checklogs', function(req, res){
 	if (req.session.user && req.cookies.user_sid) {
 		db.query('SELECT * FROM Logs', function(err, rows){
@@ -321,13 +428,14 @@ router.get('/checklogs', function(req, res){
 
 router.get('/manageusers', function(req, res){
 	if (req.session.user && req.cookies.user_sid) {
-		db.query('SELECT login FROM Users', function(err, rows){
+		db.query("SELECT login FROM Users WHERE login NOT LIKE 'admin'", function(err, rows){
 			if (err){
 				console.log('error:', err);
 			} else {
 				console.log(rows[0])
+				var rows = rows;
 				res.render('manageusers', {user: req.session.user,
-    							 		 Users: rows});	
+    							 		   Users: rows});	
 			}
 		})
     	
@@ -336,10 +444,36 @@ router.get('/manageusers', function(req, res){
     }
 })
 
-var user;
+router.route('/deleteUser:User')
+	.get( (req, res) =>{
+		if (req.session.user && req.cookies.user_sid) {
+			res.render('deleteuser', {user: req.session.user,
+									  deleting_user: req.params.User})
+	    } else {
+	    	res.redirect('/');
+	    }
+	})
+	.post( (req,res) =>{
+		let canDelete = req.body.canDelete;
+		if (canDelete === 'yes'){
+			db.query('DELETE from Users WHERE login = \"'+req.params.User+'\"', function(err, result){
+				if(err){
+					console.log('error', err);
+				} else {
+					res.render('deleteuser', {user: req.session.user,
+    							 	          info: 'User has been deleted'});
+				}
+			})
+		} else {
+			res.render('deleteuser', {user: req.session.user,
+    							 	  info: 'User has not been deleted'});	
+		}
+		
+	});
+
+
 router.route('/sendMailto:User')
 	.get( (req,res) =>{
-		console.log(req.params.User);
 		if (req.session.user && req.cookies.user_sid) {	
 			res.render('mailsender', {user: req.session.user});
 	    } else {
@@ -349,14 +483,20 @@ router.route('/sendMailto:User')
 	.post( (req,res) =>{
 		let subject = req.body.subject;
 		let mailText = req.body.mailText;
-		console.log(subject,mailText);
 		db.query("SELECT email FROM Users WHERE login = \""+req.params.User+"\"", function(err, result){
 			if (err){
 				console.log('error:', err);
 			} else {
 				let email = result[0].email
-				console.log(email,subject,mailText);
-				sendMail(email, subject, mailText)
+				sendMail(email, subject, mailText, function(isSend){
+					if (isSend === true){
+						res.render('mailsender', {user: req.session.user,
+												  info: 'Message was sent successfully'});
+					} else {
+						res.render('mailsender', {user: req.session.user,
+												  info: 'Message has not been sent'});
+					}
+				});
 			}
 		
 	});

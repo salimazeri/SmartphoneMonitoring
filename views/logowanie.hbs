@@ -25,15 +25,15 @@
                         {{/if}}
 
                         {{#if error}}
-                            <div>
-                                <p class='p'>{{error}}</p>
-                            <div>
+                            <div class="alert alert-danger" role="alert">
+                                {{error}}
+                            </div>
                         {{/if}}
 
                         {{#if info}}
-                                <div>
-                                    <p class='p'>{{info}}</p>
-                                <div>
+                            <div class="alert alert-success" role="alert">
+                                {{info}}
+                            </div>
                         {{/if}}
                         <form action="/logowanie">
                             <input type="text" name="login" placeholder="login">

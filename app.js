@@ -10,23 +10,6 @@ var routes = require('./routes/router');
 var https = require('https');
 var path = require('path');
 var mysql = require('mysql');
-var dns = require('dns');
- 
-dns.resolve4('www.google.com', function (err, addresses) {
-  	if (err) throw err;
- 
-  	console.log('addresses: ' + JSON.stringify(addresses));
- 
-  	addresses.forEach(function (a) {
-    	dns.reverse(a, function (err, domains) {
-      		if (err) {
-        		console.log('reverse for ' + a + ' failed: ' + err.message);
-      		} else {
-        		console.log('reverse for ' + a + ': ' + JSON.stringify(domains));
-      		}
-    	});
-  	});
-});
 
 var databasePort = 3306;
 var dataBaseName = 'BazaDanych';

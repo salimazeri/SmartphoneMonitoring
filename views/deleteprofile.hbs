@@ -1,7 +1,7 @@
-{{> admin_header}}
-    
+{{> header}}
+        
     <body>
-        <br><br>
+        <br>
         <div class = "center">
             {{#if info}}
                 <div class="alert alert-info" role="alert">
@@ -9,18 +9,17 @@
                 </div>
             {{/if}}
         </div>
-        <div style="margin: auto;width: 50%;border: 3px solid white;padding: 10px; text-align: center;">
-            <form>
-                <div class="form-group">
-                    <input type="text" class="form-control" name="subject" placeholder="Subject">
-                </div>
-                <div class="form-group">
-                    <textarea style='height: 300px;' class="form-control" name="mailText" rows="3"></textarea>
-                </div>
-                
-                <button id="btn1" type="submit" formmethod="post" class="btn btn-primary btn">Send</button>
-
-            </formm>
+        <div class='center'>
+            <div class="alert alert-light" role="alert">
+                Are you sure to delete your profile?
+            </div>
+            <br>
+            <div style='display:inline-block'>
+                <form method='post'>
+                    <button type="submit" name='canDelete' value='yes' class="btn btn-primary btn-lg">yes</button>
+                    <button type="submit" name='canDelete' value='no' class="btn btn-primary btn-lg">no</button>
+                </form>
+            </div>
         </div>
 
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
@@ -28,3 +27,4 @@
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
     </body>
 </html>
+
