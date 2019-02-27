@@ -81,6 +81,7 @@ var serverPort = 3030;
 server.listen(serverPort, function(){
 		console.log("Połączono z serwerem na porcie: " + serverPort);
 	})
+
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());

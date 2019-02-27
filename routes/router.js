@@ -426,6 +426,28 @@ router.get('/checklogs', function(req, res){
     }
 })
 
+router.get('/userlogs:User', function(req, res){
+	if (req.session.user && req.cookies.user_sid) {
+		db.query('SELECT * FROM Logs WHERE login = \''+req.params.User+'\';', function(err, rows){
+			if (err){
+				console.log('error:', err);
+			} else {
+				console.log(rows[0])
+				if (rows.length === 0){
+					res.render('checklogs', {user: req.session.user,
+    							 		     error: "There are no logs for this user"});
+				} else {
+					res.render('checklogs', {user: req.session.user,
+    							 		     Logs: rows});
+				}	
+			}
+		})
+    	
+    } else {
+    	res.redirect('/');
+    }
+})
+
 router.get('/manageusers', function(req, res){
 	if (req.session.user && req.cookies.user_sid) {
 		db.query("SELECT login FROM Users WHERE login NOT LIKE 'admin'", function(err, rows){
@@ -501,5 +523,6 @@ router.route('/sendMailto:User')
 		
 	});
 });
+
 module.exports = router;
 
