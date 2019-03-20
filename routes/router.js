@@ -7,10 +7,7 @@ var bcrypt = require('bcrypt');
 const saltRounds = 10;
 
 let transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    requireTLS: true,
+    service: 'gmail',
     auth: {
         user: '19salimazeri96@gmail.com',
         pass: 'haslohaslo1'
@@ -139,10 +136,6 @@ function logToDatabase(login, event){
 	});
 };
 
-
-
-// This middleware will check if user's cookie is still saved in browser and user is not set, then automatically log the user out.
-// This usually happens when you stop your express server after login, your cookie still remains saved in the browser.
 router.use((req, res, next) => {
     res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
     next();
@@ -399,7 +392,6 @@ router.route('/changepassword')
 						});
 
 					} else {
-						console.log('hereeeeeee');
 						res.render('changepassword', {user: req.session.user,
 													  error: 'Old password you provided is incorrect'});
 					}
@@ -466,7 +458,7 @@ router.get('/manageusers', function(req, res){
     }
 })
 
-router.route('/deleteUser:User')
+router.route('/deleteuser:User')
 	.get( (req, res) =>{
 		if (req.session.user && req.cookies.user_sid) {
 			res.render('deleteuser', {user: req.session.user,
@@ -494,7 +486,7 @@ router.route('/deleteUser:User')
 	});
 
 
-router.route('/sendMailto:User')
+router.route('/sendmailto:User')
 	.get( (req,res) =>{
 		if (req.session.user && req.cookies.user_sid) {	
 			res.render('mailsender', {user: req.session.user});
@@ -516,7 +508,7 @@ router.route('/sendMailto:User')
 												  info: 'Message was sent successfully'});
 					} else {
 						res.render('mailsender', {user: req.session.user,
-												  info: 'Message has not been sent'});
+												  error: 'Message has not been sent'});
 					}
 				});
 			}

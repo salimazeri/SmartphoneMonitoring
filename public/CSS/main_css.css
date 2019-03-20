@@ -75,25 +75,6 @@ h1 {
   background-origin: content-box;
 }
 
-.video {
-    background-color: rgba(121, 162, 229, 0.5);
-    border-style: solid;
-    border-color: #FFF;
-    border-width: 3px; 
-    width: 100%;
-    height: 580px;
-}
-
-.localVideo{
-    background-color: rgba(121, 162, 229, 0.5);
-    border-style: solid;
-    border-color: #FFF;
-    border-width: 3px;
-    margin-right: 5px;
-    margin-left: 5px;   
-    width: 24%;
-    height: 580px;   
-}
 
 .center_video{
     display: table;
@@ -102,12 +83,41 @@ h1 {
 }
 
 .videoElContainer {
-    display: inline-block;
-    width: 23%;
-    margin: 10px;
+  display: inline-block;
+  margin: 10px;
+}
+
+.video {
+  background-color: rgba(121, 162, 229, 0.5);
+  border-style: solid;
+  border-color: #FFF;
+  border-width: 3px; 
+  width: 100%;
+  height: 580px;
+
 }
 
 .face {
     position: absolute;
     border: 2px solid #FFF;
 }
+
+@media screen and (min-width: 1024px) {
+
+    .videoElContainer {
+      display: inline-block;
+      width: 23%;
+      margin: 10px;
+  }
+
+  .video {
+      background-color: rgba(121, 162, 229, 0.5);
+      border-style: solid;
+      border-color: #FFF;
+      border-width: 3px; 
+      width: 100%;
+      height: 560px;
+  }
+
+}
+

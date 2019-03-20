@@ -1,0 +1,32 @@
+{{> admin_header}}
+    
+    <body>
+        <br>
+        
+        {{#if Users}}
+
+            {{#each Users}}
+                
+                <div class="center">
+                    
+                    <div class="alert alert-secondary" role="alert">
+                        <div class="alert alert-light" role="alert">
+                            {{json this.login}}
+                        </div>
+                        <button onclick="window.location.href='/sendmailto{{json this.login}}'" type="button" class="btn btn-primary btn-lg">Send mail</button>
+                        <button onclick="window.location.href='/deleteuser{{json this.login}}'" type="button" class="btn btn-primary btn-lg">Delete</button>
+                        <button onclick="window.location.href='/userlogs{{json this.login}}'" type="button" class="btn btn-primary btn-lg">Check logs</button>
+
+
+                    </div>                            
+                </div>
+            </div>
+            {{/each}}
+
+            {{/if}}
+
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    </body>
+</html>

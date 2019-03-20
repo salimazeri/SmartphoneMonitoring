@@ -42,13 +42,22 @@ const httpsOptions = {
 var server = https.createServer(httpsOptions, app);
 var io = require('socket.io', { rememberTransport: false, transports: ['WebSocket', 'Flash Socket', 'AJAX long-polling'] }).listen(server);
 
-app.set('views', (__dirname, 'views'));
+app.set('views', (__dirname, 'views/main_views'));
 app.set('view engine', '.hbs');
 
 hbs.registerHelper('json', function(obj){
 	objString = JSON.stringify(obj);
 	return JSON.parse(objString);
 })
+
+hbs.registerHelper('ifequal',function(a, b,options)
+{
+    if (a==b){
+    	return options.fn(this);
+    } else {
+    	return options.inverse(this);
+    }
+});
 
 //Partials 
 const partialsDir = __dirname + '/views/partials';
@@ -66,16 +75,6 @@ filenames.forEach(function (filename) {
 
 });
 //Partials
-
-hbs.registerHelper('ifequal',function(a, b,options)
-{
-    if (a==b){
-    	return options.fn(this);
-    } else {
-    	return options.inverse(this);
-    }
-});
-
 
 var serverPort = 3030;
 server.listen(serverPort, function(){
@@ -187,5 +186,3 @@ io.sockets.on('connection', function(socket){
 		logToDatabase(message.user, 'Face Detecting stopped');
 	});
 });
-
-// ZROBIĆ TO SAMO CO PRZY RESTARCIE ICE Z CANRESTART TYLKO PRZY NORMALNYM ŁĄCZENIU KILKU KAMER
