@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+    <head id="main-header">
+        <title>SmartphoneMonitoring</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    	<link rel="stylesheet" type="text/css" href="/CSS/main_css.css">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <a class="navbar-brand" href="/">SmartphoneMonitoring</a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" id='transmit' href="/wysylanie">Transmit</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/odbieranie">Watch</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/manageprofile">Manage profile</a>
+                    </li>
+                </ul>
+          </div>
+          <a id='user' style="color: white">Logged as: {{user}}</a>&nbsp;&nbsp;
+          <button onclick="window.location.href='/wylogowanie'" id='logout' type="button" class="btn btn-primary btn">Log out</button>
+        </nav>
+
+        
+        
+    </head>
+    

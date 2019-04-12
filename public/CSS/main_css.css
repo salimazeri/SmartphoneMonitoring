@@ -1,0 +1,123 @@
+html { 
+  background: radial-gradient(black 15%, transparent 16%) 0 0,
+              radial-gradient(black 15%, transparent 16%) 8px 8px,
+              radial-gradient(rgba(255,255,255,.1) 15%, transparent 20%) 0 1px,
+              radial-gradient(rgba(255,255,255,.1) 15%, transparent 20%) 8px 9px;
+              background-color:#282828;
+              background-size:16px 16px;
+}
+
+body {
+	background: radial-gradient(black 15%, transparent 16%) 0 0,
+              radial-gradient(black 15%, transparent 16%) 8px 8px,
+              radial-gradient(rgba(255,255,255,.1) 15%, transparent 20%) 0 1px,
+              radial-gradient(rgba(255,255,255,.1) 15%, transparent 20%) 8px 9px;
+              background-color:#282828;
+              background-size:16px 16px;
+}
+
+.center {
+	text-align: center;
+}
+
+.alert {
+	display: inline-block;
+}
+
+.logs {
+  background-color: rgb(211,211,211);
+}
+
+input {
+	width: 200px;
+	height: 50px;
+	text-align: center;
+}
+
+.outer_ {
+  display: table;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.middle_ {
+  display: table-cell;
+  vertical-align: middle;
+}
+
+.inner_ {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+h1 {
+  color: white;
+}
+
+.p {
+  color: white;
+}
+
+.logParagraph{
+  color: white;
+  display: inline-block;
+  background-color: rgb(105,105,105);
+  background-origin: content-box;
+  height: 20px;
+}
+
+.userDiv{
+  background-color: gray;
+  background-origin: content-box;
+}
+
+
+.center_video{
+    display: table;
+    margin: 0 auto;
+
+}
+
+.videoElContainer {
+  display: inline-block;
+  margin: 10px;
+}
+
+.video {
+  background-color: rgba(121, 162, 229, 0.5);
+  border-style: solid;
+  border-color: #FFF;
+  border-width: 3px; 
+  width: 100%;
+  height: 580px;
+
+}
+
+.face {
+    position: absolute;
+    border: 2px solid #FFF;
+}
+
+@media screen and (min-width: 1024px) {
+
+    .videoElContainer {
+      display: inline-block;
+      width: 23%;
+      margin: 10px;
+  }
+
+  .video {
+      background-color: rgba(121, 162, 229, 0.5);
+      border-style: solid;
+      border-color: #FFF;
+      border-width: 3px; 
+      width: 100%;
+      height: 560px;
+  }
+
+}
+
