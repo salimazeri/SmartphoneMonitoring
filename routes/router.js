@@ -6,6 +6,7 @@ var nodemailer = require('nodemailer');
 var bcrypt = require('bcrypt');
 const saltRounds = 10;
 
+<<<<<<< HEAD
 const transporter = nodemailer.createTransport({
             host: 'smtp.mail.yahoo.com',
             port: 465,
@@ -17,6 +18,14 @@ const transporter = nodemailer.createTransport({
             },
             debug: false,
             logger: true
+=======
+let transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: '19salimazeri96@gmail.com',
+        pass: 'haslohaslo1'
+    }
+>>>>>>> e1e8e50a06307a2ad54e2a97d187ef02bc260521
 });
 
 var databasePort = 3306;
@@ -26,7 +35,11 @@ var userTableName = 'Users';
 function sendMail(to_, subject_, text_, callback){
 	let isSend = null;
 	var mailOptions = {
+<<<<<<< HEAD
 	  from: 'smartphonemonitoring@yahoo.com',
+=======
+	  from: '19salimazeri96@gmail.com',
+>>>>>>> e1e8e50a06307a2ad54e2a97d187ef02bc260521
 	  to: to_,
 	  subject: subject_,
 	  text: text_
@@ -35,7 +48,11 @@ function sendMail(to_, subject_, text_, callback){
 	transporter.sendMail(mailOptions, function(error, info){
 	  if (error) {
 	    console.log(error);
+<<<<<<< HEAD
 	    callback(false)
+=======
+	    callback(false);
+>>>>>>> e1e8e50a06307a2ad54e2a97d187ef02bc260521
 	  } else {
 	    console.log('Email sent: ' + info.response);
 	    callback(true);
@@ -87,9 +104,15 @@ const db_init = mysql.createConnection({
 	port: databasePort
 });
 
+<<<<<<< HEAD
 //createDataBase();
 //createUserTable();
 //createLogTable();
+=======
+createDataBase();
+createUserTable();
+createLogTable();
+>>>>>>> e1e8e50a06307a2ad54e2a97d187ef02bc260521
 setTimeout(function(){connectToDB()},1000);
 
 function connectToDB(){
