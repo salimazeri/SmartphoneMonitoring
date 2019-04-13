@@ -26,12 +26,8 @@ var options_with_restart = {offerToReceiveAudio: false,
                             iceRestart: true};
 var constraints = {
                     audio: false,
-<<<<<<< HEAD
+
                     video: {facingMode: "environment"}
-=======
-                    video: true,
-                    facingMode: { exact: "environment" }
->>>>>>> e1e8e50a06307a2ad54e2a97d187ef02bc260521
                   };
 var loggedUserID = document.getElementById("user").innerHTML;
 var id = 0;
