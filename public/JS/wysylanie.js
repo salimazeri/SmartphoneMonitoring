@@ -26,7 +26,6 @@ var options_with_restart = {offerToReceiveAudio: false,
                             iceRestart: true};
 var constraints = {
                     audio: false,
-
                     video: {facingMode: "environment"}
                   };
 var loggedUserID = document.getElementById("user").innerHTML;
@@ -195,7 +194,7 @@ function start() {
                   video.srcObject = stream;
                 })
                 .catch(function(err){
-                  console.log("getUserMedia error:",err);
+                  console.log(err.message, err.name);
                 });
         }
 

@@ -28,8 +28,6 @@ function sendMail(to_, subject_, text_, callback){
 	let isSend = null;
 	var mailOptions = {
 	  from: 'smartphonemonitoring@yahoo.com',
-
-	  from: '19salimazeri96@gmail.com',
 	  to: to_,
 	  subject: subject_,
 	  text: text_
